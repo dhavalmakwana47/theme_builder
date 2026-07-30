@@ -538,6 +538,34 @@ class PropertyInspector extends ConsumerWidget {
             },
           ),
         ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: () {
+            notifier.updateLayer(layer.copyWith(isEditable: !layer.isEditable));
+          },
+          child: Row(
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Checkbox(
+                  value: layer.isEditable,
+                  activeColor: AppColors.accentSecondary,
+                  onChanged: (val) {
+                    notifier.updateLayer(layer.copyWith(isEditable: val ?? true));
+                  },
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Is Editable (Allow User Input)',
+                  style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
