@@ -159,19 +159,37 @@ class LayerModel {
     };
   }
 
-  factory LayerModel.fromJson(Map<String, dynamic> json) {
+  factory LayerModel.fromJson(Map<dynamic, dynamic> rawJson) {
+    final json = Map<String, dynamic>.from(rawJson);
+
+    List<String> children = [];
+    if (json['childrenIds'] is List) {
+      children = (json['childrenIds'] as List).map((e) => e.toString()).toList();
+    }
+
+    LayerStyle parsedStyle = const LayerStyle();
+    if (json['style'] is Map) {
+      parsedStyle = LayerStyle.fromJson(json['style'] as Map);
+    }
+
+    Map<String, dynamic> parsedMeta = {};
+    if (json['metadata'] is Map) {
+      parsedMeta = Map<String, dynamic>.from(json['metadata'] as Map);
+    }
+
+    final typeIndex = (json['type'] as num?)?.toInt() ?? 0;
+    final shapeIndex = (json['shapeType'] as num?)?.toInt() ?? 0;
+    final imageFitIndex = (json['imageFit'] as num?)?.toInt() ?? 0;
+
     return LayerModel(
-      id: json['id'] as String,
-      name: json['name'] as String,
-      type: LayerType.values[json['type'] as int? ?? 0],
-      parentId: json['parentId'] as String?,
-      childrenIds: (json['childrenIds'] as List<dynamic>?)
-              ?.map((e) => e as String)
-              .toList() ??
-          const [],
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? 'Layer',
+      type: typeIndex < LayerType.values.length ? LayerType.values[typeIndex] : LayerType.text,
+      parentId: json['parentId']?.toString(),
+      childrenIds: children,
       isLocked: json['isLocked'] as bool? ?? false,
       isVisible: json['isVisible'] as bool? ?? true,
-      zIndex: json['zIndex'] as int? ?? 0,
+      zIndex: (json['zIndex'] as num?)?.toInt() ?? 0,
       x: (json['x'] as num?)?.toDouble() ?? 0.0,
       y: (json['y'] as num?)?.toDouble() ?? 0.0,
       width: (json['width'] as num?)?.toDouble() ?? 200.0,
@@ -181,18 +199,16 @@ class LayerModel {
       scaleY: (json['scaleY'] as num?)?.toDouble() ?? 1.0,
       flipX: json['flipX'] as bool? ?? false,
       flipY: json['flipY'] as bool? ?? false,
-      style: json['style'] != null
-          ? LayerStyle.fromJson(json['style'] as Map<String, dynamic>)
-          : const LayerStyle(),
-      text: json['text'] as String? ?? 'Sample Text',
-      assetUrl: json['assetUrl'] as String? ?? '',
-      svgData: json['svgData'] as String? ?? '',
-      qrData: json['qrData'] as String? ?? 'https://tournax.com',
-      barcodeData: json['barcodeData'] as String? ?? '123456789012',
-      shapeType: ShapeType.values[json['shapeType'] as int? ?? 0],
-      imageFit: ImageFitMode.values[json['imageFit'] as int? ?? 0],
-      variableKey: json['variableKey'] as String?,
-      metadata: json['metadata'] as Map<String, dynamic>? ?? const {},
+      style: parsedStyle,
+      text: json['text']?.toString() ?? 'Sample Text',
+      assetUrl: json['assetUrl']?.toString() ?? '',
+      svgData: json['svgData']?.toString() ?? '',
+      qrData: json['qrData']?.toString() ?? 'https://tournax.com',
+      barcodeData: json['barcodeData']?.toString() ?? '123456789012',
+      shapeType: shapeIndex < ShapeType.values.length ? ShapeType.values[shapeIndex] : ShapeType.rectangle,
+      imageFit: imageFitIndex < ImageFitMode.values.length ? ImageFitMode.values[imageFitIndex] : ImageFitMode.cover,
+      variableKey: json['variableKey']?.toString(),
+      metadata: parsedMeta,
     );
   }
 }

@@ -45,13 +45,12 @@ class TemplateRenderer extends StatelessWidget {
       height: targetHeight,
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
-        color: Color(spec.backgroundColorHex),
-        image: spec.backgroundImageUrl.isNotEmpty
-            ? DecorationImage(
-                image: NetworkImage(spec.backgroundImageUrl),
-                fit: BoxFit.cover,
-              )
-            : null,
+        color: Color.fromARGB(
+          ((spec.backgroundColorHex >> 24) & 0xFF) == 0 ? 255 : ((spec.backgroundColorHex >> 24) & 0xFF),
+          (spec.backgroundColorHex >> 16) & 0xFF,
+          (spec.backgroundColorHex >> 8) & 0xFF,
+          spec.backgroundColorHex & 0xFF,
+        ),
       ),
       child: Transform.scale(
         scaleX: scaleX,
@@ -61,15 +60,24 @@ class TemplateRenderer extends StatelessWidget {
           width: spec.width,
           height: spec.height,
           child: Stack(
-            clipBehavior: Clip.none,
-            children: sortedLayers.map((layer) {
-              if (!layer.isVisible) return const SizedBox.shrink();
-              return Positioned(
-                left: layer.x,
-                top: layer.y,
-                child: _buildLayerTransformWrapper(layer, activeVars),
-              );
-            }).toList(),
+            clipBehavior: Clip.hardEdge,
+            children: [
+              // 1. Scaled Canvas Background Image Layer
+              if (spec.backgroundImageUrl.isNotEmpty)
+                Positioned.fill(
+                  child: _buildBackgroundImageWidget(spec.backgroundImageUrl),
+                ),
+
+              // 2. Scaled Template Layers Stack
+              ...sortedLayers.map((layer) {
+                if (!layer.isVisible) return const SizedBox.shrink();
+                return Positioned(
+                  left: layer.x,
+                  top: layer.y,
+                  child: _buildLayerTransformWrapper(layer, activeVars),
+                );
+              }),
+            ],
           ),
         ),
       ),
@@ -86,10 +94,7 @@ class TemplateRenderer extends StatelessWidget {
         alignment: Alignment.center,
         transform: Matrix4.identity()
           ..rotateZ(rad)
-          ..scale(
-            layer.flipX ? -layer.scaleX : layer.scaleX,
-            layer.flipY ? -layer.scaleY : layer.scaleY,
-          ),
+          ..scale(layer.flipX ? -layer.scaleX : layer.scaleX, layer.flipY ? -layer.scaleY : layer.scaleY),
         child: content,
       );
     }
@@ -102,17 +107,18 @@ class TemplateRenderer extends StatelessWidget {
       case LayerType.text:
         return RenderTextLayer(layer: layer, variables: variables);
       case LayerType.image:
+      case LayerType.playerAvatar:
+      case LayerType.teamLogo:
         return RenderImageLayer(layer: layer, variables: variables);
       case LayerType.svg:
         return RenderSvgLayer(layer: layer, variables: variables);
       case LayerType.shape:
+      case LayerType.container:
         return RenderShapeLayer(layer: layer);
       case LayerType.qr:
         return RenderQrLayer(layer: layer, variables: variables);
       case LayerType.barcode:
         return RenderBarcodeLayer(layer: layer, variables: variables);
-      case LayerType.playerAvatar:
-      case LayerType.teamLogo:
       case LayerType.rankBadge:
       case LayerType.prizeBadge:
       case LayerType.slotRow:
@@ -122,19 +128,41 @@ class TemplateRenderer extends StatelessWidget {
       case LayerType.customComponent:
         return RenderComponentLayer(layer: layer, variables: variables);
       default:
-        return SizedBox(
-          width: layer.width,
-          height: layer.height,
-          child: Container(
-            color: Color(layer.style.fillColorHex),
-            child: Center(
-              child: Text(
-                layer.name,
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ),
-          ),
-        );
+        return RenderShapeLayer(layer: layer);
+    }
+  }
+
+  Widget _buildBackgroundImageWidget(String url) {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      return Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          // Automatic host IP fallback if 10.151.118.115 vs 127.0.0.1 differs
+          if (url.contains('10.151.118.115:8000')) {
+            final fallbackUrl = url.replaceAll('10.151.118.115:8000', '127.0.0.1:8000');
+            return Image.network(
+              fallbackUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            );
+          } else if (url.contains('127.0.0.1:8000')) {
+            final fallbackUrl = url.replaceAll('127.0.0.1:8000', '10.151.118.115:8000');
+            return Image.network(
+              fallbackUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      );
+    } else {
+      return Image.asset(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+      );
     }
   }
 }

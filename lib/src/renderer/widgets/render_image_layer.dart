@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:cached_network_image/cached_network_image.dart';
 import '../../domain/models/layer_model.dart';
 import '../../domain/models/enums.dart';
 
@@ -46,30 +45,40 @@ class RenderImageLayer extends StatelessWidget {
 
     Widget imageWidget;
     if (url.startsWith('http://') || url.startsWith('https://')) {
-      imageWidget = CachedNetworkImage(
-        imageUrl: url,
+      imageWidget = Image.network(
+        url,
         fit: fit,
-        placeholder: (context, _) => Container(
-          color: const Color(0xFF27272A),
-          child: const Center(
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: CircularProgressIndicator(strokeWidth: 2),
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            color: const Color(0xFF27272A),
+            child: const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
             ),
-          ),
-        ),
-        errorWidget: (context, _, __) => Container(
-          color: const Color(0xFF3F3F46),
-          child: const Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.broken_image, color: Colors.white54, size: 28),
-              SizedBox(height: 4),
-              Text('Image Error', style: TextStyle(color: Colors.white54, fontSize: 10)),
-            ],
-          ),
-        ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          if (url.contains('10.151.118.115:8000')) {
+            final fallbackUrl = url.replaceAll('10.151.118.115:8000', '127.0.0.1:8000');
+            return Image.network(
+              fallbackUrl,
+              fit: fit,
+              errorBuilder: (_, __, ___) => _buildPlaceholder(),
+            );
+          } else if (url.contains('127.0.0.1:8000')) {
+            final fallbackUrl = url.replaceAll('127.0.0.1:8000', '10.151.118.115:8000');
+            return Image.network(
+              fallbackUrl,
+              fit: fit,
+              errorBuilder: (_, __, ___) => _buildPlaceholder(),
+            );
+          }
+          return _buildPlaceholder();
+        },
       );
     } else if (url.isNotEmpty) {
       imageWidget = Image.asset(

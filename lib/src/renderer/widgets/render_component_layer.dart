@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/layer_model.dart';
+import '../../domain/models/layer_style.dart';
 import '../../domain/models/enums.dart';
 
 class RenderComponentLayer extends StatelessWidget {
@@ -254,7 +255,7 @@ class RenderComponentLayer extends StatelessWidget {
                 children: [
                   Icon(Icons.emoji_events, color: Colors.amberAccent, size: 28),
                   SizedBox(width: 8),
-                  Text('CHAMPIONS', style: TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.black, fontSize: 18, letterSpacing: 2)),
+                  Text('CHAMPIONS', style: TextStyle(color: Colors.amberAccent, fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 2)),
                 ],
               ),
               const SizedBox(height: 4),
@@ -282,7 +283,7 @@ class RenderComponentLayer extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('TOURNAX LEAGUE', style: TextStyle(color: const Color(0xFF3B82F6), fontWeight: FontWeight.black, fontSize: 16, letterSpacing: 1.5)),
+            Text('TOURNAX LEAGUE', style: TextStyle(color: const Color(0xFF3B82F6), fontWeight: FontWeight.w900, fontSize: 16, letterSpacing: 1.5)),
             Column(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.end,

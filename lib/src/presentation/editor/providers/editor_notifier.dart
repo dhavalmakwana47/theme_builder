@@ -143,7 +143,9 @@ class EditorNotifier extends StateNotifier<EditorState> {
     double? rotation,
     bool snap = false,
   }) {
-    final currentLayer = state.template.layers.firstWhere((l) => l.id == layerId);
+    final index = state.template.layers.indexWhere((l) => l.id == layerId);
+    if (index == -1) return;
+    final currentLayer = state.template.layers[index];
 
     double finalX = x ?? currentLayer.x;
     double finalY = y ?? currentLayer.y;
@@ -211,7 +213,9 @@ class EditorNotifier extends StateNotifier<EditorState> {
     final newSelection = <String>[];
 
     for (final id in state.selectedLayerIds) {
-      final orig = state.template.layers.firstWhere((l) => l.id == id);
+      final index = state.template.layers.indexWhere((l) => l.id == id);
+      if (index == -1) continue;
+      final orig = state.template.layers[index];
       final String copyId = _uuid.v4();
       final copy = orig.copyWith(
         id: copyId,
@@ -310,7 +314,14 @@ class EditorNotifier extends StateNotifier<EditorState> {
   // --- CANVAS & VIEWPORT ---
 
   void updateCanvasSpec(CanvasSpec spec) {
-    _pushHistory(state.template.copyWith(canvasSpec: spec));
+    final updatedLayers = state.template.layers.map((layer) {
+      if (layer.name.toLowerCase().contains('background') && layer.type == LayerType.shape) {
+        return layer.copyWith(width: spec.width, height: spec.height);
+      }
+      return layer;
+    }).toList();
+
+    _pushHistory(state.template.copyWith(canvasSpec: spec, layers: updatedLayers));
   }
 
   void setZoom(double zoom) {

@@ -14,23 +14,66 @@ class GridRulerPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    if (size.width <= 0 || size.height <= 0) return;
+
+    // 1. Draw Blueprint Resolution Watermark Text in Center of Grid Canvas
+    final textPainter = TextPainter(
+      text: TextSpan(
+        text: '${size.width.toInt()} × ${size.height.toInt()}',
+        style: TextStyle(
+          color: Colors.white.withOpacity(0.08),
+          fontSize: (size.width * 0.11).clamp(28.0, 130.0),
+          fontWeight: FontWeight.w900,
+          letterSpacing: 4,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    textPainter.paint(
+      canvas,
+      Offset(
+        (size.width - textPainter.width) / 2,
+        (size.height - textPainter.height) / 2,
+      ),
+    );
+
+    // 2. Draw Dynamic Proportional Grid Matrix (10 Proportional Divisions)
     if (canvasSpec.showGrid) {
+      final double stepX = size.width / 10.0;
+      final double stepY = size.height / 10.0;
+
       final gridPaint = Paint()
-        ..color = AppColors.gridLine
+        ..color = Colors.white.withOpacity(0.18)
         ..strokeWidth = 1.0;
 
-      final double grid = canvasSpec.gridSize;
+      final centerGridPaint = Paint()
+        ..color = AppColors.accentPrimary.withOpacity(0.5)
+        ..strokeWidth = 1.8;
 
-      for (double x = 0; x <= size.width; x += grid) {
-        canvas.drawLine(Offset(x, 0), Offset(x, size.height), gridPaint);
+      // Draw 10 Vertical Grid Division Lines
+      for (int i = 0; i <= 10; i++) {
+        final double x = i * stepX;
+        final paint = (i == 5) ? centerGridPaint : gridPaint;
+        canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
       }
 
-      for (double y = 0; y <= size.height; y += grid) {
-        canvas.drawLine(Offset(0, y), Offset(size.width, y), gridPaint);
+      // Draw 10 Horizontal Grid Division Lines
+      for (int i = 0; i <= 10; i++) {
+        final double y = i * stepY;
+        final paint = (i == 5) ? centerGridPaint : gridPaint;
+        canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
       }
+
+      // Outer Bright White Frame Outline
+      final whiteBorder = Paint()
+        ..color = Colors.white
+        ..strokeWidth = 3.5
+        ..style = PaintingStyle.stroke;
+      canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), whiteBorder);
     }
 
-    // Paint Alignment Guide Lines
+    // 3. Paint Active Alignment & Snap Guide Lines
     final guidePaint = Paint()
       ..color = AppColors.guideLine
       ..strokeWidth = 1.5

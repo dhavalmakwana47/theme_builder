@@ -170,44 +170,64 @@ class LayerStyle {
     };
   }
 
-  factory LayerStyle.fromJson(Map<String, dynamic> json) {
+  static int _parseHex(dynamic val, int defaultVal) {
+    if (val == null) return defaultVal;
+    final num n = val as num;
+    return n.toInt().toUnsigned(32);
+  }
+
+  factory LayerStyle.fromJson(Map<dynamic, dynamic> rawJson) {
+    final json = Map<String, dynamic>.from(rawJson);
+
+    List<int> colors = const [0xFF3B82F6, 0xFF8B5CF6];
+    if (json['gradientColorsHex'] is List) {
+      colors = (json['gradientColorsHex'] as List)
+          .map((e) => (e as num).toInt().toUnsigned(32))
+          .toList();
+    }
+
+    List<double> stops = const [0.0, 1.0];
+    if (json['gradientStops'] is List) {
+      stops = (json['gradientStops'] as List)
+          .map((e) => (e as num).toDouble())
+          .toList();
+    }
+
+    final blendIndex = (json['blendMode'] as num?)?.toInt() ?? 0;
+    final alignIndex = (json['textAlign'] as num?)?.toInt() ?? 0;
+    final transformIndex = (json['textTransform'] as num?)?.toInt() ?? 0;
+
     return LayerStyle(
-      fillColorHex: json['fillColorHex'] as int? ?? 0xFF3B82F6,
+      fillColorHex: _parseHex(json['fillColorHex'], 0xFF3B82F6),
       isGradientFill: json['isGradientFill'] as bool? ?? false,
-      gradientColorsHex: (json['gradientColorsHex'] as List<dynamic>?)
-              ?.map((e) => e as int)
-              .toList() ??
-          const [0xFF3B82F6, 0xFF8B5CF6],
-      gradientStops: (json['gradientStops'] as List<dynamic>?)
-              ?.map((e) => (e as num).toDouble())
-              .toList() ??
-          const [0.0, 1.0],
+      gradientColorsHex: colors,
+      gradientStops: stops,
       gradientAngle: (json['gradientAngle'] as num?)?.toDouble() ?? 45.0,
-      borderColorHex: json['borderColorHex'] as int? ?? 0x00000000,
+      borderColorHex: _parseHex(json['borderColorHex'], 0x00000000),
       borderWidth: (json['borderWidth'] as num?)?.toDouble() ?? 0.0,
       borderRadius: (json['borderRadius'] as num?)?.toDouble() ?? 0.0,
-      shadowColorHex: json['shadowColorHex'] as int? ?? 0x40000000,
+      shadowColorHex: _parseHex(json['shadowColorHex'], 0x40000000),
       shadowDx: (json['shadowDx'] as num?)?.toDouble() ?? 0.0,
       shadowDy: (json['shadowDy'] as num?)?.toDouble() ?? 4.0,
       shadowBlurRadius: (json['shadowBlurRadius'] as num?)?.toDouble() ?? 10.0,
       shadowSpreadRadius: (json['shadowSpreadRadius'] as num?)?.toDouble() ?? 0.0,
       opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
-      blendMode: BlendMode.values[json['blendMode'] as int? ?? 0],
+      blendMode: blendIndex < BlendMode.values.length ? BlendMode.values[blendIndex] : BlendMode.srcOver,
       padding: (json['padding'] as num?)?.toDouble() ?? 0.0,
       margin: (json['margin'] as num?)?.toDouble() ?? 0.0,
-      fontFamily: json['fontFamily'] as String? ?? 'Inter',
+      fontFamily: json['fontFamily']?.toString() ?? 'Inter',
       fontSize: (json['fontSize'] as num?)?.toDouble() ?? 24.0,
-      fontWeightValue: json['fontWeightValue'] as int? ?? 600,
+      fontWeightValue: (json['fontWeightValue'] as num?)?.toInt() ?? 600,
       isItalic: json['isItalic'] as bool? ?? false,
       isUnderline: json['isUnderline'] as bool? ?? false,
-      textColorHex: json['textColorHex'] as int? ?? 0xFFFFFFFF,
+      textColorHex: _parseHex(json['textColorHex'], 0xFFFFFFFF),
       letterSpacing: (json['letterSpacing'] as num?)?.toDouble() ?? 0.0,
       wordSpacing: (json['wordSpacing'] as num?)?.toDouble() ?? 0.0,
       lineHeight: (json['lineHeight'] as num?)?.toDouble() ?? 1.2,
       textStrokeWidth: (json['textStrokeWidth'] as num?)?.toDouble() ?? 0.0,
-      textStrokeColorHex: json['textStrokeColorHex'] as int? ?? 0xFF000000,
-      textAlign: TextAlign.values[json['textAlign'] as int? ?? 0],
-      textTransform: TextTransformMode.values[json['textTransform'] as int? ?? 0],
+      textStrokeColorHex: _parseHex(json['textStrokeColorHex'], 0xFF000000),
+      textAlign: alignIndex < TextAlign.values.length ? TextAlign.values[alignIndex] : TextAlign.left,
+      textTransform: transformIndex < TextTransformMode.values.length ? TextTransformMode.values[transformIndex] : TextTransformMode.none,
     );
   }
 }

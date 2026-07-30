@@ -18,7 +18,8 @@ class EditorLeftSidebar extends ConsumerWidget {
         color: AppColors.panelBackground,
         border: Border(right: BorderSide(color: AppColors.borderDark, width: 1)),
       ),
-      child: Column(
+      child: SingleChildScrollView(
+        child: Column(
         children: [
           const SizedBox(height: 8),
 
@@ -50,25 +51,36 @@ class EditorLeftSidebar extends ConsumerWidget {
             },
           ),
           _buildToolItem(
-            tool: EditorTool.rectangle,
-            icon: Icons.rectangle_outlined,
-            tooltip: 'Rectangle Tool (R)',
+            tool: EditorTool.image,
+            icon: Icons.image_outlined,
+            tooltip: 'Image Tool (I)',
             activeTool: state.activeTool,
             onTap: () {
-              notifier.selectTool(EditorTool.rectangle);
-              notifier.addLayer(LayerType.shape, shapeType: ShapeType.rectangle);
+              notifier.selectTool(EditorTool.image);
+              notifier.addLayer(LayerType.image);
             },
           ),
-          _buildToolItem(
-            tool: EditorTool.circle,
-            icon: Icons.circle_outlined,
-            tooltip: 'Circle Tool (C)',
-            activeTool: state.activeTool,
-            onTap: () {
-              notifier.selectTool(EditorTool.circle);
-              notifier.addLayer(LayerType.shape, shapeType: ShapeType.circle);
+
+          // Shapes Selection Popup Menu
+          PopupMenuButton<ShapeType>(
+            tooltip: 'Add Shape (Rectangle, Rounded Rect, Circle, Triangle, Line)',
+            color: AppColors.panelHeader,
+            icon: const Icon(Icons.interests_outlined, size: 20, color: AppColors.textSecondary),
+            onSelected: (shape) {
+              notifier.selectTool(EditorTool.shape);
+              notifier.addLayer(LayerType.shape, shapeType: shape);
             },
+            itemBuilder: (context) => [
+              _buildShapeMenuItem(ShapeType.rectangle, 'Rectangle', Icons.crop_square),
+              _buildShapeMenuItem(ShapeType.roundedRectangle, 'Rounded Rectangle (Slot Bar)', Icons.crop_landscape),
+              _buildShapeMenuItem(ShapeType.circle, 'Circle', Icons.circle_outlined),
+              _buildShapeMenuItem(ShapeType.triangle, 'Triangle', Icons.change_history),
+              _buildShapeMenuItem(ShapeType.polygon, 'Polygon / Hexagon', Icons.polyline),
+              _buildShapeMenuItem(ShapeType.line, 'Line', Icons.horizontal_rule),
+              _buildShapeMenuItem(ShapeType.divider, 'Divider', Icons.linear_scale),
+            ],
           ),
+
           _buildToolItem(
             tool: EditorTool.qr,
             icon: Icons.qr_code_2,
@@ -92,25 +104,27 @@ class EditorLeftSidebar extends ConsumerWidget {
 
           const Divider(color: AppColors.borderDark, height: 16, indent: 8, endIndent: 8),
 
-          // Presets Popup Menu
+          // Presets & Tournament Components Popup Menu
           PopupMenuButton<LayerType>(
-            tooltip: 'Add Tournament Badge / Component',
-            dropdownColor: AppColors.panelHeader,
-            icon: const Icon(Icons.workspace_premium, size: 20, color: AppColors.textSecondary),
+            tooltip: 'Add Tournament Badge / Component Preset',
+            color: AppColors.panelHeader,
+            icon: const Icon(Icons.workspace_premium, size: 20, color: AppColors.accentSecondary),
             onSelected: (type) => notifier.addLayer(type),
             itemBuilder: (context) => [
-              _buildMenuItem(LayerType.playerAvatar, 'Player Avatar'),
-              _buildMenuItem(LayerType.teamLogo, 'Team Logo Shield'),
-              _buildMenuItem(LayerType.rankBadge, 'Rank Badge (#1)'),
-              _buildMenuItem(LayerType.prizeBadge, 'Prize Badge (\$5k)'),
-              _buildMenuItem(LayerType.slotRow, 'Slot Row'),
-              _buildMenuItem(LayerType.playerCard, 'Player Card'),
-              _buildMenuItem(LayerType.winnerBanner, 'Winner Banner'),
-              _buildMenuItem(LayerType.tournamentHeader, 'Tournament Header'),
+              _buildMenuItem(LayerType.slotRow, 'Slot Row / Bar', Icons.view_headline),
+              _buildMenuItem(LayerType.teamLogo, 'Team Logo Shield', Icons.shield),
+              _buildMenuItem(LayerType.playerAvatar, 'Player Avatar', Icons.account_circle),
+              _buildMenuItem(LayerType.rankBadge, 'Rank Badge (#1)', Icons.stars),
+              _buildMenuItem(LayerType.prizeBadge, 'Prize Badge (\$5k)', Icons.monetization_on),
+              _buildMenuItem(LayerType.playerCard, 'Player Card', Icons.badge),
+              _buildMenuItem(LayerType.winnerBanner, 'Winner Banner', Icons.emoji_events),
+              _buildMenuItem(LayerType.tournamentHeader, 'Tournament Header', Icons.title),
+              _buildMenuItem(LayerType.svg, 'SVG Vector Layer', Icons.code),
+              _buildMenuItem(LayerType.customComponent, 'Custom Component Box', Icons.widgets),
             ],
           ),
 
-          const Spacer(),
+          const SizedBox(height: 16),
 
           _buildToolItem(
             tool: EditorTool.zoom,
@@ -122,13 +136,35 @@ class EditorLeftSidebar extends ConsumerWidget {
           const SizedBox(height: 8),
         ],
       ),
+    ),
+  );
+  }
+
+  PopupMenuItem<LayerType> _buildMenuItem(LayerType type, String label, [IconData? icon]) {
+    return PopupMenuItem(
+      value: type,
+      child: Row(
+        children: [
+          if (icon != null) ...[
+            Icon(icon, size: 16, color: AppColors.accentSecondary),
+            const SizedBox(width: 8),
+          ],
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 13)),
+        ],
+      ),
     );
   }
 
-  PopupMenuItem<LayerType> _buildMenuItem(LayerType type, String label) {
+  PopupMenuItem<ShapeType> _buildShapeMenuItem(ShapeType shape, String label, IconData icon) {
     return PopupMenuItem(
-      value: type,
-      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 13)),
+      value: shape,
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: AppColors.accentPrimary),
+          const SizedBox(width: 8),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 13)),
+        ],
+      ),
     );
   }
 

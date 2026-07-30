@@ -24,7 +24,9 @@ class EditorBottomBar extends ConsumerWidget {
         border: Border(top: BorderSide(color: AppColors.borderDark, width: 1)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Row(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
         children: [
           // Canvas Dimensions
           Icon(Icons.aspect_ratio, size: 13, color: AppColors.textMuted),
@@ -60,7 +62,7 @@ class EditorBottomBar extends ConsumerWidget {
             style: const TextStyle(color: AppColors.textPrimary, fontSize: 11, fontWeight: FontWeight.w500),
           ),
 
-          const Spacer(),
+          const SizedBox(width: 16),
 
           // History & Performance Info
           Text(
@@ -78,6 +80,7 @@ class EditorBottomBar extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 }

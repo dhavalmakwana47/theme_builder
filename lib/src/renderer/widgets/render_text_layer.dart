@@ -3,6 +3,16 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../domain/models/layer_model.dart';
 import '../../domain/models/enums.dart';
 
+Color parseColor(int hex) {
+  if (hex == 0) return const Color(0x00000000);
+  final int a = (hex >> 24) & 0xFF;
+  final int r = (hex >> 16) & 0xFF;
+  final int g = (hex >> 8) & 0xFF;
+  final int b = hex & 0xFF;
+  final int alpha = (a == 0 && (r != 0 || g != 0 || b != 0)) ? 255 : a;
+  return Color.fromARGB(alpha, r, g, b);
+}
+
 class RenderTextLayer extends StatelessWidget {
   final LayerModel layer;
   final Map<String, String> variables;
@@ -43,6 +53,8 @@ class RenderTextLayer extends StatelessWidget {
     final FontWeight weight = FontWeight.values[
         ((style.fontWeightValue / 100).round() - 1).clamp(0, 8)];
 
+    final Color fontColor = parseColor(style.textColorHex);
+
     TextStyle textStyle;
     try {
       textStyle = GoogleFonts.getFont(
@@ -50,7 +62,7 @@ class RenderTextLayer extends StatelessWidget {
         fontSize: style.fontSize,
         fontWeight: weight,
         fontStyle: style.isItalic ? FontStyle.italic : FontStyle.normal,
-        color: Color(style.textColorHex),
+        color: fontColor,
         letterSpacing: style.letterSpacing,
         wordSpacing: style.wordSpacing,
         height: style.lineHeight,
@@ -61,7 +73,7 @@ class RenderTextLayer extends StatelessWidget {
         fontSize: style.fontSize,
         fontWeight: weight,
         fontStyle: style.isItalic ? FontStyle.italic : FontStyle.normal,
-        color: Color(style.textColorHex),
+        color: fontColor,
         letterSpacing: style.letterSpacing,
         wordSpacing: style.wordSpacing,
         height: style.lineHeight,
@@ -76,7 +88,7 @@ class RenderTextLayer extends StatelessWidget {
       textStyle = textStyle.copyWith(
         shadows: [
           Shadow(
-            color: Color(style.shadowColorHex),
+            color: parseColor(style.shadowColorHex),
             offset: Offset(style.shadowDx, style.shadowDy),
             blurRadius: style.shadowBlurRadius,
           ),
@@ -105,7 +117,7 @@ class RenderTextLayer extends StatelessWidget {
         foreground: Paint()
           ..style = PaintingStyle.stroke
           ..strokeWidth = style.textStrokeWidth
-          ..color = Color(style.textStrokeColorHex),
+          ..color = parseColor(style.textStrokeColorHex),
       );
 
       child = Stack(
@@ -116,14 +128,14 @@ class RenderTextLayer extends StatelessWidget {
       );
     }
 
-    // Gradient text support
+    // Gradient text support only if explicitly enabled
     if (style.isGradientFill && style.gradientColorsHex.length >= 2) {
-      final colors = style.gradientColorsHex.map((c) => Color(c)).toList();
+      final colors = style.gradientColorsHex.map((c) => parseColor(c)).toList();
       child = ShaderMask(
         shaderCallback: (bounds) {
           return LinearGradient(
             colors: colors,
-            stops: style.gradientStops,
+            stops: style.gradientStops.length == colors.length ? style.gradientStops : null,
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ).createShader(bounds);

@@ -35,11 +35,15 @@ class EditorState {
   bool get canRedo => historyIndex < historyStack.length - 1;
 
   LayerModel? get primarySelectedLayer {
-    if (selectedLayerIds.isEmpty) return null;
-    return template.layers.firstWhere(
-      (l) => l.id == selectedLayerIds.last,
-      orElse: () => template.layers.first,
-    );
+    if (selectedLayerIds.isEmpty || template.layers.isEmpty) return null;
+    try {
+      return template.layers.firstWhere(
+        (l) => l.id == selectedLayerIds.last,
+        orElse: () => template.layers.first,
+      );
+    } catch (_) {
+      return null;
+    }
   }
 
   EditorState copyWith({

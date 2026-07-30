@@ -5,6 +5,7 @@ import '../../../../domain/models/layer_model.dart';
 
 class TransformHandlesOverlay extends StatefulWidget {
   final LayerModel layer;
+  final double scale;
   final Function(double x, double y, double w, double h, {bool snap}) onTransformUpdate;
   final Function(double rotation) onRotateUpdate;
   final VoidCallback onTransformEnd;
@@ -12,6 +13,7 @@ class TransformHandlesOverlay extends StatefulWidget {
   const TransformHandlesOverlay({
     super.key,
     required this.layer,
+    this.scale = 1.0,
     required this.onTransformUpdate,
     required this.onRotateUpdate,
     required this.onTransformEnd,
@@ -28,11 +30,12 @@ class _TransformHandlesOverlayState extends State<TransformHandlesOverlay> {
   double _initialW = 0;
   double _initialH = 0;
 
-  static const double handleSize = 10.0;
+  static const double handleSize = 14.0;
 
   @override
   Widget build(BuildContext context) {
     final layer = widget.layer;
+    final double effectiveScale = widget.scale > 0 ? widget.scale : 1.0;
 
     if (layer.isLocked) {
       return SizedBox(
@@ -40,13 +43,13 @@ class _TransformHandlesOverlayState extends State<TransformHandlesOverlay> {
         height: layer.height,
         child: Container(
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.amber, width: 1.5),
+            border: Border.all(color: Colors.amber, width: 2.0),
           ),
           child: const Align(
             alignment: Alignment.topRight,
             child: Padding(
               padding: EdgeInsets.all(4),
-              child: Icon(Icons.lock, color: Colors.amber, size: 14),
+              child: Icon(Icons.lock, color: Colors.amber, size: 16),
             ),
           ),
         ),
@@ -59,8 +62,9 @@ class _TransformHandlesOverlayState extends State<TransformHandlesOverlay> {
       child: Stack(
         clipBehavior: Clip.none,
         children: [
-          // Drag-to-move body container
+          // Drag-to-move body container with opaque hit-testing for touch
           GestureDetector(
+            behavior: HitTestBehavior.opaque,
             onPanStart: (details) {
               _dragStart = details.globalPosition;
               _initialX = layer.x;
@@ -68,7 +72,7 @@ class _TransformHandlesOverlayState extends State<TransformHandlesOverlay> {
             },
             onPanUpdate: (details) {
               if (_dragStart == null) return;
-              final delta = details.globalPosition - _dragStart!;
+              final delta = (details.globalPosition - _dragStart!) / effectiveScale;
               widget.onTransformUpdate(
                 _initialX + delta.dx,
                 _initialY + delta.dy,
@@ -82,8 +86,8 @@ class _TransformHandlesOverlayState extends State<TransformHandlesOverlay> {
               width: layer.width,
               height: layer.height,
               decoration: BoxDecoration(
-                border: Border.all(color: AppColors.selectionOutline, width: 1.5),
-                color: AppColors.selectionOutline.withOpacity(0.04),
+                border: Border.all(color: AppColors.selectionOutline, width: 2.0),
+                color: AppColors.selectionOutline.withOpacity(0.08),
               ),
             ),
           ),
@@ -95,9 +99,10 @@ class _TransformHandlesOverlayState extends State<TransformHandlesOverlay> {
             child: Container(width: 2, height: 24, color: AppColors.selectionOutline),
           ),
           Positioned(
-            left: layer.width / 2 - 6,
-            top: -30,
+            left: layer.width / 2 - 12,
+            top: -36,
             child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
               onPanUpdate: (details) {
                 final center = Offset(layer.x + layer.width / 2, layer.y + layer.height / 2);
                 final touch = details.globalPosition;
@@ -106,11 +111,14 @@ class _TransformHandlesOverlayState extends State<TransformHandlesOverlay> {
               },
               onPanEnd: (_) => widget.onTransformEnd(),
               child: Container(
-                width: 12,
-                height: 12,
-                decoration: const BoxDecoration(
-                  color: AppColors.selectionOutline,
-                  shape: BoxShape.circle,
+                padding: const EdgeInsets.all(4),
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  decoration: const BoxDecoration(
+                    color: AppColors.selectionOutline,
+                    shape: BoxShape.circle,
+                  ),
                 ),
               ),
             ),
@@ -148,6 +156,7 @@ class _TransformHandlesOverlayState extends State<TransformHandlesOverlay> {
 
   Widget _buildResizeHandle(Alignment alignment, Function(double dx, double dy) onDelta) {
     final layer = widget.layer;
+    final double effectiveScale = widget.scale > 0 ? widget.scale : 1.0;
 
     double left = 0;
     double top = 0;
@@ -179,9 +188,10 @@ class _TransformHandlesOverlayState extends State<TransformHandlesOverlay> {
     }
 
     return Positioned(
-      left: left,
-      top: top,
+      left: left - 6,
+      top: top - 6,
       child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
         onPanStart: (details) {
           _dragStart = details.globalPosition;
           _initialX = layer.x;
@@ -191,18 +201,23 @@ class _TransformHandlesOverlayState extends State<TransformHandlesOverlay> {
         },
         onPanUpdate: (details) {
           if (_dragStart == null) return;
-          final delta = details.globalPosition - _dragStart!;
+          final delta = (details.globalPosition - _dragStart!) / effectiveScale;
           onDelta(delta.dx, delta.dy);
         },
         onPanEnd: (_) => widget.onTransformEnd(),
         child: Container(
-          width: handleSize,
-          height: handleSize,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            border: Border.all(color: AppColors.selectionOutline, width: 1.5),
-            shape: BoxShape.rectangle,
-            borderRadius: BorderRadius.circular(2),
+          padding: const EdgeInsets.all(6),
+          child: Container(
+            width: handleSize,
+            height: handleSize,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: AppColors.selectionOutline, width: 2.0),
+              shape: BoxShape.circle,
+              boxShadow: const [
+                BoxShadow(color: Colors.black38, blurRadius: 4),
+              ],
+            ),
           ),
         ),
       ),

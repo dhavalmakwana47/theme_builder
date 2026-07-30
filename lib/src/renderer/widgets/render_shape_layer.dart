@@ -3,6 +3,16 @@ import 'package:flutter/material.dart';
 import '../../domain/models/layer_model.dart';
 import '../../domain/models/enums.dart';
 
+Color parseShapeColor(int hex) {
+  if (hex == 0) return const Color(0x00000000);
+  final int a = (hex >> 24) & 0xFF;
+  final int r = (hex >> 16) & 0xFF;
+  final int g = (hex >> 8) & 0xFF;
+  final int b = hex & 0xFF;
+  final int alpha = (a == 0 && (r != 0 || g != 0 || b != 0)) ? 255 : a;
+  return Color.fromARGB(alpha, r, g, b);
+}
+
 class RenderShapeLayer extends StatelessWidget {
   final LayerModel layer;
 
@@ -17,7 +27,8 @@ class RenderShapeLayer extends StatelessWidget {
     final bool isCircle = layer.shapeType == ShapeType.circle;
 
     Decoration decoration;
-    final List<Color> gradientColors = style.gradientColorsHex.map((c) => Color(c)).toList();
+    final List<Color> gradientColors =
+        style.gradientColorsHex.map((c) => parseShapeColor(c)).toList();
 
     if (style.isGradientFill && gradientColors.length >= 2) {
       final double rad = style.gradientAngle * (math.pi / 180);
@@ -26,20 +37,20 @@ class RenderShapeLayer extends StatelessWidget {
         borderRadius: isCircle ? null : BorderRadius.circular(style.borderRadius),
         gradient: LinearGradient(
           colors: gradientColors,
-          stops: style.gradientStops,
+          stops: style.gradientStops.length == gradientColors.length ? style.gradientStops : null,
           begin: Alignment(math.cos(rad), math.sin(rad)),
           end: Alignment(-math.cos(rad), -math.sin(rad)),
         ),
         border: style.borderWidth > 0
             ? Border.all(
-                color: Color(style.borderColorHex),
+                color: parseShapeColor(style.borderColorHex),
                 width: style.borderWidth,
               )
             : null,
         boxShadow: style.shadowColorHex != 0x00000000 && style.shadowBlurRadius > 0
             ? [
                 BoxShadow(
-                  color: Color(style.shadowColorHex),
+                  color: parseShapeColor(style.shadowColorHex),
                   offset: Offset(style.shadowDx, style.shadowDy),
                   blurRadius: style.shadowBlurRadius,
                   spreadRadius: style.shadowSpreadRadius,
@@ -51,23 +62,40 @@ class RenderShapeLayer extends StatelessWidget {
       decoration = BoxDecoration(
         shape: isCircle ? BoxShape.circle : BoxShape.rectangle,
         borderRadius: isCircle ? null : BorderRadius.circular(style.borderRadius),
-        color: Color(style.fillColorHex),
+        color: parseShapeColor(style.fillColorHex),
         border: style.borderWidth > 0
             ? Border.all(
-                color: Color(style.borderColorHex),
+                color: parseShapeColor(style.borderColorHex),
                 width: style.borderWidth,
               )
             : null,
         boxShadow: style.shadowColorHex != 0x00000000 && style.shadowBlurRadius > 0
             ? [
                 BoxShadow(
-                  color: Color(style.shadowColorHex),
+                  color: parseShapeColor(style.shadowColorHex),
                   offset: Offset(style.shadowDx, style.shadowDy),
                   blurRadius: style.shadowBlurRadius,
                   spreadRadius: style.shadowSpreadRadius,
                 )
               ]
             : null,
+      );
+    }
+
+    if (layer.shapeType == ShapeType.polygon) {
+      return SizedBox(
+        width: layer.width,
+        height: layer.height,
+        child: Opacity(
+          opacity: style.opacity,
+          child: CustomPaint(
+            painter: _PolygonBadgePainter(
+              color: parseShapeColor(style.fillColorHex),
+              borderColor: parseShapeColor(style.borderColorHex),
+              borderWidth: style.borderWidth,
+            ),
+          ),
+        ),
       );
     }
 
@@ -79,8 +107,8 @@ class RenderShapeLayer extends StatelessWidget {
           opacity: style.opacity,
           child: CustomPaint(
             painter: _TrianglePainter(
-              color: Color(style.fillColorHex),
-              borderColor: Color(style.borderColorHex),
+              color: parseShapeColor(style.fillColorHex),
+              borderColor: parseShapeColor(style.borderColorHex),
               borderWidth: style.borderWidth,
             ),
           ),
@@ -96,7 +124,7 @@ class RenderShapeLayer extends StatelessWidget {
           child: Container(
             height: style.borderWidth > 0 ? style.borderWidth : 2.0,
             width: layer.width,
-            color: Color(style.fillColorHex),
+            color: parseShapeColor(style.fillColorHex),
           ),
         ),
       );
@@ -111,6 +139,44 @@ class RenderShapeLayer extends StatelessWidget {
       ),
     );
   }
+}
+
+class _PolygonBadgePainter extends CustomPainter {
+  final Color color;
+  final Color borderColor;
+  final double borderWidth;
+
+  _PolygonBadgePainter({
+    required this.color,
+    required this.borderColor,
+    required this.borderWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final path = Path()
+      ..moveTo(size.height * 0.4, 0)
+      ..lineTo(size.width, 0)
+      ..lineTo(size.width - size.height * 0.4, size.height)
+      ..lineTo(0, size.height)
+      ..close();
+
+    final fillPaint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    canvas.drawPath(path, fillPaint);
+
+    if (borderWidth > 0) {
+      final strokePaint = Paint()
+        ..color = borderColor
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = borderWidth;
+      canvas.drawPath(path, strokePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }
 
 class _TrianglePainter extends CustomPainter {

@@ -65,18 +65,39 @@ class CanvasSpec {
     };
   }
 
-  factory CanvasSpec.fromJson(Map<String, dynamic> json) {
+  factory CanvasSpec.fromJson(Map<dynamic, dynamic> rawJson) {
+    final json = Map<String, dynamic>.from(rawJson);
     return CanvasSpec(
       width: (json['width'] as num?)?.toDouble() ?? 1080.0,
       height: (json['height'] as num?)?.toDouble() ?? 1920.0,
-      backgroundColorHex: json['backgroundColorHex'] as int? ?? 0xFF18181B,
-      backgroundImageUrl: json['backgroundImageUrl'] as String? ?? '',
+      backgroundColorHex: (json['backgroundColorHex'] as num?)?.toInt().toUnsigned(32) ?? 0xFF18181B,
+      backgroundImageUrl: json['backgroundImageUrl']?.toString() ?? '',
       showGrid: json['showGrid'] as bool? ?? true,
       gridSize: (json['gridSize'] as num?)?.toDouble() ?? 20.0,
       snapToGrid: json['snapToGrid'] as bool? ?? true,
       snapToObjects: json['snapToObjects'] as bool? ?? true,
       showRulers: json['showRulers'] as bool? ?? true,
-      presetName: json['presetName'] as String? ?? 'Story 1080x1920',
+      presetName: json['presetName']?.toString() ?? 'Story 1080x1920',
     );
   }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CanvasSpec &&
+          runtimeType == other.runtimeType &&
+          width == other.width &&
+          height == other.height &&
+          backgroundColorHex == other.backgroundColorHex &&
+          backgroundImageUrl == other.backgroundImageUrl &&
+          showGrid == other.showGrid &&
+          gridSize == other.gridSize &&
+          snapToGrid == other.snapToGrid &&
+          snapToObjects == other.snapToObjects &&
+          showRulers == other.showRulers &&
+          presetName == other.presetName;
+
+  @override
+  int get hashCode =>
+      Object.hash(width, height, backgroundColorHex, backgroundImageUrl, showGrid, gridSize, snapToGrid, snapToObjects, showRulers, presetName);
 }

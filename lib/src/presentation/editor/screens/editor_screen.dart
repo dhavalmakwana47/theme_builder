@@ -9,10 +9,16 @@ import '../widgets/canvas/interactive_canvas_viewport.dart';
 import '../widgets/inspector/property_inspector.dart';
 import '../widgets/layers/layers_panel.dart';
 import '../../template_manager/screens/template_manager_screen.dart';
+import '../../../domain/models/template_model.dart';
 import '../../../core/constants/app_colors.dart';
 
 class EditorScreen extends ConsumerStatefulWidget {
-  const EditorScreen({super.key});
+  final TemplateModel? initialTemplate;
+
+  const EditorScreen({
+    super.key,
+    this.initialTemplate,
+  });
 
   @override
   ConsumerState<EditorScreen> createState() => _EditorScreenState();
@@ -23,6 +29,17 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
   final FocusNode _keyboardFocusNode = FocusNode();
   Offset _cursorPosition = Offset.zero;
   bool _showTemplateManager = false;
+  bool _showRightPanelMobile = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialTemplate != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(editorNotifierProvider.notifier).loadTemplate(widget.initialTemplate!);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -32,6 +49,14 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
 
   void _handleKeyEvent(RawKeyEvent event) {
     if (event is! RawKeyDownEvent) return;
+
+    // Ignore global keyboard shortcuts when editing text fields
+    final primaryFocus = FocusManager.instance.primaryFocus;
+    if (primaryFocus != null && primaryFocus.context != null) {
+      if (primaryFocus.context!.widget is EditableText) {
+        return;
+      }
+    }
 
     final notifier = ref.read(editorNotifierProvider.notifier);
     final isControlPressed = event.isControlPressed || event.isMetaPressed;
@@ -50,8 +75,8 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
     else if (isControlPressed && event.logicalKey == LogicalKeyboardKey.keyD) {
       notifier.duplicateSelectedLayers();
     }
-    // Delete or Backspace -> Delete Selected Layer
-    else if (event.logicalKey == LogicalKeyboardKey.delete || event.logicalKey == LogicalKeyboardKey.backspace) {
+    // Delete Key -> Delete Selected Layer
+    else if (event.logicalKey == LogicalKeyboardKey.delete) {
       notifier.deleteSelectedLayers();
     }
     // Arrow Key Nudges
@@ -83,13 +108,31 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
       );
     }
 
+    final double screenWidth = MediaQuery.of(context).size.width;
+    final bool isMobile = screenWidth < 768;
+
     return RawKeyboardListener(
       focusNode: _keyboardFocusNode,
       autofocus: true,
       onKey: _handleKeyEvent,
       child: Scaffold(
         backgroundColor: AppColors.backgroundDark,
-        body: Column(
+        endDrawer: isMobile
+            ? Drawer(
+                backgroundColor: AppColors.panelBackground,
+                child: SafeArea(
+                  child: Column(
+                    children: const [
+                      Expanded(flex: 6, child: PropertyInspector()),
+                      Divider(color: AppColors.borderDark, height: 1),
+                      Expanded(flex: 4, child: LayersPanel()),
+                    ],
+                  ),
+                ),
+              )
+            : null,
+        body: SafeArea(
+          child: Column(
           children: [
             // Top Menu Bar
             EditorTopBar(
@@ -97,44 +140,76 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
               onOpenTemplateManager: () => setState(() => _showTemplateManager = true),
             ),
 
-            // Main Editor Workspace (3-Panel Photoshop Layout)
+            // Main Editor Workspace (Responsive 3-Panel Layout)
             Expanded(
-              child: Row(
+              child: Stack(
                 children: [
-                  // Left Tool Palette Sidebar
-                  const EditorLeftSidebar(),
+                  Row(
+                    children: [
+                      // Left Tool Palette Sidebar
+                      const EditorLeftSidebar(),
 
-                  // Center Interactive Viewport
-                  Expanded(
-                    child: InteractiveCanvasViewport(
-                      repaintBoundaryKey: _repaintBoundaryKey,
-                      onCursorHover: (pos) => setState(() => _cursorPosition = pos),
-                    ),
+                      // Center Interactive Viewport
+                      Expanded(
+                        child: InteractiveCanvasViewport(
+                          repaintBoundaryKey: _repaintBoundaryKey,
+                          onCursorHover: (pos) => setState(() => _cursorPosition = pos),
+                        ),
+                      ),
+
+                      // Desktop Right Sidebar (Hidden on Mobile unless toggled)
+                      if (!isMobile)
+                        Container(
+                          width: 300,
+                          decoration: const BoxDecoration(
+                            color: AppColors.panelBackground,
+                            border: Border(left: BorderSide(color: AppColors.borderDark, width: 1)),
+                          ),
+                          child: Column(
+                            children: const [
+                              Expanded(flex: 6, child: PropertyInspector()),
+                              Divider(color: AppColors.borderDark, height: 1),
+                              Expanded(flex: 4, child: LayersPanel()),
+                            ],
+                          ),
+                        ),
+
+                      if (isMobile && _showRightPanelMobile)
+                        Container(
+                          width: screenWidth * 0.75,
+                          decoration: const BoxDecoration(
+                            color: AppColors.panelBackground,
+                            border: Border(left: BorderSide(color: AppColors.borderDark, width: 1)),
+                          ),
+                          child: Column(
+                            children: const [
+                              Expanded(flex: 6, child: PropertyInspector()),
+                              Divider(color: AppColors.borderDark, height: 1),
+                              Expanded(flex: 4, child: LayersPanel()),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
 
-                  // Right Sidebar Panel Split (Properties & Layers)
-                  Container(
-                    width: 320,
-                    decoration: const BoxDecoration(
-                      color: AppColors.panelBackground,
-                      border: Border(left: BorderSide(color: AppColors.borderDark, width: 1)),
-                    ),
-                    child: Column(
-                      children: const [
-                        // Property Inspector (Top 60%)
-                        Expanded(
-                          flex: 6,
-                          child: PropertyInspector(),
+                  // Floating Inspector Toggle Button for Mobile
+                  if (isMobile)
+                    Positioned(
+                      right: 12,
+                      bottom: 12,
+                      child: FloatingActionButton.small(
+                        backgroundColor: AppColors.accentPrimary,
+                        child: Icon(
+                          _showRightPanelMobile ? Icons.close : Icons.tune,
+                          color: Colors.white,
                         ),
-                        Divider(color: AppColors.borderDark, height: 1),
-                        // Layers Stack Panel (Bottom 40%)
-                        Expanded(
-                          flex: 4,
-                          child: LayersPanel(),
-                        ),
-                      ],
+                        onPressed: () {
+                          setState(() {
+                            _showRightPanelMobile = !_showRightPanelMobile;
+                          });
+                        },
+                      ),
                     ),
-                  ),
                 ],
               ),
             ),
@@ -144,6 +219,7 @@ class _EditorScreenState extends ConsumerState<EditorScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }

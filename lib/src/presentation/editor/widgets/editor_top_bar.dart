@@ -1,14 +1,17 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'dart:io';
 import '../providers/editor_notifier.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/canvas_presets.dart';
 import '../../../core/services/image_export_service.dart';
 import '../../../domain/models/enums.dart';
+import '../../template_manager/providers/template_list_notifier.dart';
 import 'dialogs/variable_preview_dialog.dart';
 
 class EditorTopBar extends ConsumerWidget {
@@ -33,7 +36,9 @@ class EditorTopBar extends ConsumerWidget {
         border: Border(bottom: BorderSide(color: AppColors.borderDark, width: 1)),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: Row(
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
         children: [
           // Logo & App Title
           Row(
@@ -83,13 +88,43 @@ class EditorTopBar extends ConsumerWidget {
             onTap: onOpenTemplateManager,
           ),
           _buildActionButton(
+            icon: Icons.view_headline_rounded,
+            label: 'Dark Inferno Graphic',
+            onTap: () async {
+              final slotTemplate = ref.read(templateRepositoryProvider).create12SlotListTemplate();
+              notifier.loadTemplate(slotTemplate);
+              final saved = await ref.read(templateListProvider.notifier).saveTemplate(slotTemplate);
+              if (saved != null) {
+                notifier.loadTemplate(saved);
+              }
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(saved != null
+                        ? 'Loaded & saved 24-Slot Dark Sci-Fi Ember Inferno Graphic to Laravel API!'
+                        : 'Loaded Dark Inferno Graphic locally'),
+                    backgroundColor: saved != null ? AppColors.accentSuccess : AppColors.accentPrimary,
+                  ),
+                );
+              }
+            },
+          ),
+          _buildActionButton(
             icon: Icons.save,
             label: 'Save',
             onTap: () async {
-              await ref.read(templateRepositoryProvider).saveTemplate(state.template);
+              final saved = await ref.read(templateListProvider.notifier).saveTemplate(state.template);
+              if (saved != null) {
+                notifier.loadTemplate(saved);
+              }
               if (context.mounted) {
+                final listState = ref.read(templateListProvider);
+                final errorMsg = listState.errorMessage ?? 'Check connection to Laravel API';
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Template saved locally & synced!'), backgroundColor: AppColors.accentSuccess),
+                  SnackBar(
+                    content: Text(saved != null ? 'Template saved to Laravel API!' : 'Save failed: $errorMsg'),
+                    backgroundColor: saved != null ? AppColors.accentSuccess : Colors.redAccent,
+                  ),
                 );
               }
             },
@@ -135,11 +170,14 @@ class EditorTopBar extends ConsumerWidget {
           // Quick Add Tool Buttons
           _buildToolShortcut(Icons.text_fields, 'Text', () => notifier.addLayer(LayerType.text)),
           _buildToolShortcut(Icons.crop_square, 'Rect', () => notifier.addLayer(LayerType.shape, shapeType: ShapeType.rectangle)),
+          _buildToolShortcut(Icons.crop_landscape, 'Rounded Rect', () => notifier.addLayer(LayerType.shape, shapeType: ShapeType.roundedRectangle)),
           _buildToolShortcut(Icons.circle_outlined, 'Circle', () => notifier.addLayer(LayerType.shape, shapeType: ShapeType.circle)),
+          _buildToolShortcut(Icons.image_outlined, 'Image', () => notifier.addLayer(LayerType.image)),
+          _buildToolShortcut(Icons.view_headline, 'Slot Row', () => notifier.addLayer(LayerType.slotRow)),
           _buildToolShortcut(Icons.qr_code_2, 'QR', () => notifier.addLayer(LayerType.qr)),
           _buildToolShortcut(Icons.stars, 'Badge', () => notifier.addLayer(LayerType.rankBadge)),
 
-          const Spacer(),
+          const SizedBox(width: 16),
 
           // Canvas Preset Selector
           DropdownButton<String>(
@@ -218,7 +256,8 @@ class EditorTopBar extends ConsumerWidget {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildActionButton({
@@ -255,57 +294,118 @@ class EditorTopBar extends ConsumerWidget {
   }
 
   void _handleExportJson(BuildContext context, EditorNotifier notifier) async {
-    final String jsonStr = notifier.exportJson();
-    String? path = await FilePicker.platform.saveFile(
-      dialogTitle: 'Save TournaX Template JSON',
-      fileName: 'tournax_template.json',
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-    );
+    try {
+      final String jsonStr = notifier.exportJson();
+      final bytes = Uint8List.fromList(utf8.encode(jsonStr));
 
-    if (path != null) {
-      final file = File(path);
-      await file.writeAsString(jsonStr);
+      String? path = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save TournaX Template JSON',
+        fileName: 'tournax_template.json',
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: bytes,
+      );
+
+      if (path != null) {
+        if (!path.toLowerCase().endsWith('.json') && !kIsWeb) {
+          path = '$path.json';
+        }
+        if (!kIsWeb) {
+          final file = File(path);
+          await file.writeAsBytes(bytes);
+        }
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Exported JSON successfully${kIsWeb ? '' : ' to $path'}'),
+              backgroundColor: AppColors.accentSuccess,
+            ),
+          );
+        }
+      }
+    } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Exported JSON to $path'), backgroundColor: AppColors.accentSuccess),
+          SnackBar(
+            content: Text('Failed to export JSON: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
         );
       }
     }
   }
 
   void _handleImportJson(BuildContext context, EditorNotifier notifier) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-    );
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        withData: true,
+      );
 
-    if (result != null && result.files.single.path != null) {
-      final file = File(result.files.single.path!);
-      final content = await file.readAsString();
-      notifier.importJson(content);
+      if (result != null && result.files.isNotEmpty) {
+        final file = result.files.single;
+        String? content;
+        if (file.bytes != null) {
+          content = utf8.decode(file.bytes!);
+        } else if (file.path != null && !kIsWeb) {
+          content = await File(file.path!).readAsString();
+        }
+
+        if (content != null && content.isNotEmpty) {
+          notifier.importJson(content);
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Template imported successfully!'),
+                backgroundColor: AppColors.accentSuccess,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Template imported successfully!'), backgroundColor: AppColors.accentSuccess),
+          SnackBar(
+            content: Text('Failed to import JSON: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
         );
       }
     }
   }
 
   void _handleExportImage(BuildContext context) async {
-    final bytes = await ImageExportService.capturePng(
-      repaintBoundaryKey: repaintBoundaryKey,
-      pixelRatio: 3.0,
-    );
-
-    if (bytes != null) {
-      final savedPath = await ImageExportService.saveImageToFile(
-        bytes: bytes,
-        fileName: 'tournax_render_3x.png',
+    try {
+      final bytes = await ImageExportService.capturePng(
+        repaintBoundaryKey: repaintBoundaryKey,
+        pixelRatio: 3.0,
       );
-      if (context.mounted && savedPath != null) {
+
+      if (bytes != null) {
+        final savedPath = await ImageExportService.saveImageToFile(
+          bytes: bytes,
+          fileName: 'tournax_esports_graphic_3x.png',
+        );
+        if (context.mounted && savedPath != null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(kIsWeb
+                  ? 'High-res PNG downloaded successfully!'
+                  : 'Rendered 3x PNG saved to $savedPath'),
+              backgroundColor: AppColors.accentSuccess,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Rendered PNG saved to $savedPath'), backgroundColor: AppColors.accentSuccess),
+          SnackBar(
+            content: Text('Failed to export image: $e'),
+            backgroundColor: Colors.redAccent,
+          ),
         );
       }
     }
