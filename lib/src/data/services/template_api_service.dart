@@ -27,8 +27,8 @@ class TemplateApiService {
               BaseOptions(
                 baseUrl: ApiConfig.baseUrl,
                 headers: ApiConfig.defaultHeaders,
-                connectTimeout: const Duration(seconds: 10),
-                receiveTimeout: const Duration(seconds: 10),
+                connectTimeout: const Duration(seconds: 4),
+                receiveTimeout: const Duration(seconds: 4),
               ),
             );
 
@@ -46,28 +46,51 @@ class TemplateApiService {
       queryParams['search'] = search.trim();
     }
 
-    final response = await dio.get('/templates', queryParameters: queryParams);
+    final List<String> urlsToTry = [
+      ApiConfig.baseUrl,
+      'http://127.0.0.1:8000/api/v1',
+      'http://localhost:8000/api/v1',
+      'https://tournax.in/api/v1',
+    ];
 
-    if (response.data is Map && response.data['success'] == true) {
-      final resMap = Map<String, dynamic>.from(response.data as Map);
-      final dataList = (resMap['data'] is List) ? (resMap['data'] as List) : [];
-      final pagMeta = (resMap['pagination'] is Map) ? Map<String, dynamic>.from(resMap['pagination'] as Map) : <String, dynamic>{};
+    Object? lastError;
 
-      final templates = dataList
-          .whereType<Map>()
-          .map((item) => TemplateModel.fromJson(item))
-          .toList();
+    for (final baseUrlStr in urlsToTry) {
+      try {
+        final client = Dio(BaseOptions(
+          baseUrl: baseUrlStr,
+          headers: ApiConfig.defaultHeaders,
+          connectTimeout: const Duration(seconds: 4),
+          receiveTimeout: const Duration(seconds: 4),
+        ));
 
-      return PaginatedTemplatesResponse(
-        templates: templates,
-        currentPage: (pagMeta['current_page'] as num?)?.toInt() ?? page,
-        perPage: (pagMeta['per_page'] as num?)?.toInt() ?? perPage,
-        total: (pagMeta['total'] as num?)?.toInt() ?? templates.length,
-        lastPage: (pagMeta['last_page'] as num?)?.toInt() ?? 1,
-      );
-    } else {
-      throw Exception(response.data?['message'] ?? 'Failed to fetch templates');
+        final response = await client.get('/templates', queryParameters: queryParams);
+
+        if (response.data is Map && response.data['success'] == true) {
+          final resMap = Map<String, dynamic>.from(response.data as Map);
+          final dataList = (resMap['data'] is List) ? (resMap['data'] as List) : [];
+          final pagMeta = (resMap['pagination'] is Map) ? Map<String, dynamic>.from(resMap['pagination'] as Map) : <String, dynamic>{};
+
+          final templates = dataList
+              .whereType<Map>()
+              .map((item) => TemplateModel.fromJson(item))
+              .toList();
+
+          return PaginatedTemplatesResponse(
+            templates: templates,
+            currentPage: (pagMeta['current_page'] as num?)?.toInt() ?? page,
+            perPage: (pagMeta['per_page'] as num?)?.toInt() ?? perPage,
+            total: (pagMeta['total'] as num?)?.toInt() ?? templates.length,
+            lastPage: (pagMeta['last_page'] as num?)?.toInt() ?? 1,
+          );
+        }
+      } catch (e) {
+        lastError = e;
+        print('TemplateApiService failed for URL $baseUrlStr: $e');
+      }
     }
+
+    throw Exception(lastError ?? 'Failed to fetch templates from all backend API endpoints');
   }
 
   /// Get single template by ID.

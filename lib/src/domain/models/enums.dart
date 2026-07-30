@@ -71,6 +71,31 @@ enum LayerType {
         return 'Custom Component';
     }
   }
+
+  static LayerType fromDynamic(dynamic val, [LayerType defaultType = LayerType.text]) {
+    if (val == null) return defaultType;
+    if (val is int) {
+      return val >= 0 && val < LayerType.values.length ? LayerType.values[val] : defaultType;
+    }
+    if (val is num) {
+      final i = val.toInt();
+      return i >= 0 && i < LayerType.values.length ? LayerType.values[i] : defaultType;
+    }
+    final str = val.toString().trim();
+    final parsedInt = int.tryParse(str);
+    if (parsedInt != null) {
+      return parsedInt >= 0 && parsedInt < LayerType.values.length ? LayerType.values[parsedInt] : defaultType;
+    }
+    final normalized = str.replaceAll('_', '').replaceAll(' ', '').toLowerCase();
+    for (final type in LayerType.values) {
+      if (type.name.toLowerCase() == normalized ||
+          type.name.replaceAll('_', '').toLowerCase() == normalized ||
+          type.displayName.replaceAll(' ', '').toLowerCase() == normalized) {
+        return type;
+      }
+    }
+    return defaultType;
+  }
 }
 
 /// Supported vector shape types.
@@ -101,6 +126,31 @@ enum ShapeType {
         return 'Divider';
     }
   }
+
+  static ShapeType fromDynamic(dynamic val, [ShapeType defaultShape = ShapeType.rectangle]) {
+    if (val == null) return defaultShape;
+    if (val is int) {
+      return val >= 0 && val < ShapeType.values.length ? ShapeType.values[val] : defaultShape;
+    }
+    if (val is num) {
+      final i = val.toInt();
+      return i >= 0 && i < ShapeType.values.length ? ShapeType.values[i] : defaultShape;
+    }
+    final str = val.toString().trim();
+    final parsedInt = int.tryParse(str);
+    if (parsedInt != null) {
+      return parsedInt >= 0 && parsedInt < ShapeType.values.length ? ShapeType.values[parsedInt] : defaultShape;
+    }
+    final normalized = str.replaceAll('_', '').replaceAll(' ', '').toLowerCase();
+    for (final shape in ShapeType.values) {
+      if (shape.name.toLowerCase() == normalized ||
+          shape.name.replaceAll('_', '').toLowerCase() == normalized ||
+          shape.displayName.replaceAll(' ', '').toLowerCase() == normalized) {
+        return shape;
+      }
+    }
+    return defaultShape;
+  }
 }
 
 /// Text transform rules.
@@ -109,6 +159,27 @@ enum TextTransformMode {
   uppercase,
   lowercase,
   capitalize;
+
+  static TextTransformMode fromDynamic(dynamic val, [TextTransformMode defaultMode = TextTransformMode.none]) {
+    if (val == null) return defaultMode;
+    if (val is int) {
+      return val >= 0 && val < TextTransformMode.values.length ? TextTransformMode.values[val] : defaultMode;
+    }
+    if (val is num) {
+      final i = val.toInt();
+      return i >= 0 && i < TextTransformMode.values.length ? TextTransformMode.values[i] : defaultMode;
+    }
+    final str = val.toString().trim();
+    final parsedInt = int.tryParse(str);
+    if (parsedInt != null) {
+      return parsedInt >= 0 && parsedInt < TextTransformMode.values.length ? TextTransformMode.values[parsedInt] : defaultMode;
+    }
+    final normalized = str.toLowerCase();
+    for (final mode in TextTransformMode.values) {
+      if (mode.name.toLowerCase() == normalized) return mode;
+    }
+    return defaultMode;
+  }
 }
 
 /// Image fit modes.
@@ -119,6 +190,29 @@ enum ImageFitMode {
   fitWidth,
   fitHeight,
   none;
+
+  static ImageFitMode fromDynamic(dynamic val, [ImageFitMode defaultMode = ImageFitMode.cover]) {
+    if (val == null) return defaultMode;
+    if (val is int) {
+      return val >= 0 && val < ImageFitMode.values.length ? ImageFitMode.values[val] : defaultMode;
+    }
+    if (val is num) {
+      final i = val.toInt();
+      return i >= 0 && i < ImageFitMode.values.length ? ImageFitMode.values[i] : defaultMode;
+    }
+    final str = val.toString().trim();
+    final parsedInt = int.tryParse(str);
+    if (parsedInt != null) {
+      return parsedInt >= 0 && parsedInt < ImageFitMode.values.length ? ImageFitMode.values[parsedInt] : defaultMode;
+    }
+    final normalized = str.replaceAll('_', '').toLowerCase();
+    for (final mode in ImageFitMode.values) {
+      if (mode.name.toLowerCase() == normalized || mode.name.replaceAll('_', '').toLowerCase() == normalized) {
+        return mode;
+      }
+    }
+    return defaultMode;
+  }
 }
 
 /// Active tool in the editor.

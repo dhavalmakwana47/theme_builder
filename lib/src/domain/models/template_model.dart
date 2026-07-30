@@ -92,29 +92,31 @@ class TemplateModel {
 
   factory TemplateModel.fromJson(Map<dynamic, dynamic> rawJson) {
     final Map<String, dynamic> json = Map<String, dynamic>.from(rawJson);
-    Map<String, dynamic> root = json;
+    Map<String, dynamic> root = Map<String, dynamic>.from(json);
 
     if (json.containsKey('json_data') && json['json_data'] != null) {
       if (json['json_data'] is String) {
         try {
           final decoded = jsonDecode(json['json_data'] as String);
           if (decoded is Map) {
-            root = Map<String, dynamic>.from(decoded);
+            root.addAll(Map<String, dynamic>.from(decoded));
           }
         } catch (_) {}
       } else if (json['json_data'] is Map) {
-        root = Map<String, dynamic>.from(json['json_data'] as Map);
+        root.addAll(Map<String, dynamic>.from(json['json_data'] as Map));
       }
-      if (json['id'] != null) root['id'] = json['id'].toString();
-      if (json['name'] != null) root['name'] = json['name'];
-      if (json['thumbnail'] != null) root['thumbnail'] = json['thumbnail'];
-      if (json['created_at'] != null) root['createdAt'] = json['created_at'];
-      if (json['updated_at'] != null) root['updatedAt'] = json['updated_at'];
     }
 
+    if (json['id'] != null) root['id'] = json['id'].toString();
+    if (json['name'] != null) root['name'] = json['name'];
+    if (json['thumbnail'] != null) root['thumbnail'] = json['thumbnail'];
+    if (json['created_at'] != null) root['createdAt'] = json['created_at'];
+    if (json['updated_at'] != null) root['updatedAt'] = json['updated_at'];
+
     CanvasSpec spec = const CanvasSpec();
-    if (root['canvasSpec'] is Map) {
-      spec = CanvasSpec.fromJson(Map<String, dynamic>.from(root['canvasSpec'] as Map));
+    final rawSpec = root['canvasSpec'] ?? root['canvas_spec'];
+    if (rawSpec is Map) {
+      spec = CanvasSpec.fromJson(Map<String, dynamic>.from(rawSpec as Map));
     } else if (json['width'] != null && json['height'] != null) {
       spec = CanvasSpec(
         width: (json['width'] as num).toDouble(),
@@ -123,8 +125,9 @@ class TemplateModel {
     }
 
     List<LayerModel> parsedLayers = [];
-    if (root['layers'] is List) {
-      for (final item in (root['layers'] as List)) {
+    final rawLayers = root['layers'];
+    if (rawLayers is List) {
+      for (final item in rawLayers) {
         if (item is Map) {
           parsedLayers.add(LayerModel.fromJson(Map<String, dynamic>.from(item)));
         }
@@ -132,8 +135,9 @@ class TemplateModel {
     }
 
     Map<String, String> parsedGlobals = {};
-    if (root['globalVariables'] is Map) {
-      (root['globalVariables'] as Map).forEach((k, v) {
+    final rawGlobals = root['globalVariables'] ?? root['global_variables'];
+    if (rawGlobals is Map) {
+      (rawGlobals as Map).forEach((k, v) {
         parsedGlobals[k.toString()] = v.toString();
       });
     }

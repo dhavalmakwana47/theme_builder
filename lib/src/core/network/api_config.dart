@@ -7,7 +7,7 @@ class ApiConfig {
   // Primary base URL for Laravel API
   // On Flutter Web, use relative or localhost/IP depending on setup
   static String get baseUrl {
-    return 'https://tournax.in/api/v1';
+    return 'http://10.151.118.115:8000/api/v1';
   }
 
   // API Key Authentication Header requirement

@@ -163,8 +163,9 @@ class LayerModel {
     final json = Map<String, dynamic>.from(rawJson);
 
     List<String> children = [];
-    if (json['childrenIds'] is List) {
-      children = (json['childrenIds'] as List).map((e) => e.toString()).toList();
+    final rawChildren = json['childrenIds'] ?? json['children_ids'];
+    if (rawChildren is List) {
+      children = rawChildren.map((e) => e.toString()).toList();
     }
 
     LayerStyle parsedStyle = const LayerStyle();
@@ -177,37 +178,49 @@ class LayerModel {
       parsedMeta = Map<String, dynamic>.from(json['metadata'] as Map);
     }
 
-    final typeIndex = (json['type'] as num?)?.toInt() ?? 0;
-    final shapeIndex = (json['shapeType'] as num?)?.toInt() ?? 0;
-    final imageFitIndex = (json['imageFit'] as num?)?.toInt() ?? 0;
+    double parseDoubleVal(dynamic val, double fallback) {
+      if (val == null) return fallback;
+      if (val is num) return val.toDouble();
+      return double.tryParse(val.toString()) ?? fallback;
+    }
+
+    int parseIntVal(dynamic val, int fallback) {
+      if (val == null) return fallback;
+      if (val is num) return val.toInt();
+      return int.tryParse(val.toString()) ?? fallback;
+    }
+
+    final rawType = json['type'];
+    final rawShape = json['shapeType'] ?? json['shape_type'];
+    final rawFit = json['imageFit'] ?? json['image_fit'];
 
     return LayerModel(
       id: json['id']?.toString() ?? '',
       name: json['name']?.toString() ?? 'Layer',
-      type: typeIndex < LayerType.values.length ? LayerType.values[typeIndex] : LayerType.text,
-      parentId: json['parentId']?.toString(),
+      type: LayerType.fromDynamic(rawType, LayerType.text),
+      parentId: (json['parentId'] ?? json['parent_id'])?.toString(),
       childrenIds: children,
-      isLocked: json['isLocked'] as bool? ?? false,
-      isVisible: json['isVisible'] as bool? ?? true,
-      zIndex: (json['zIndex'] as num?)?.toInt() ?? 0,
-      x: (json['x'] as num?)?.toDouble() ?? 0.0,
-      y: (json['y'] as num?)?.toDouble() ?? 0.0,
-      width: (json['width'] as num?)?.toDouble() ?? 200.0,
-      height: (json['height'] as num?)?.toDouble() ?? 100.0,
-      rotation: (json['rotation'] as num?)?.toDouble() ?? 0.0,
-      scaleX: (json['scaleX'] as num?)?.toDouble() ?? 1.0,
-      scaleY: (json['scaleY'] as num?)?.toDouble() ?? 1.0,
-      flipX: json['flipX'] as bool? ?? false,
-      flipY: json['flipY'] as bool? ?? false,
+      isLocked: (json['isLocked'] ?? json['is_locked']) as bool? ?? false,
+      isVisible: (json['isVisible'] ?? json['is_visible']) as bool? ?? true,
+      zIndex: parseIntVal(json['zIndex'] ?? json['z_index'], 0),
+      x: parseDoubleVal(json['x'], 0.0),
+      y: parseDoubleVal(json['y'], 0.0),
+      width: parseDoubleVal(json['width'], 200.0),
+      height: parseDoubleVal(json['height'], 100.0),
+      rotation: parseDoubleVal(json['rotation'], 0.0),
+      scaleX: parseDoubleVal(json['scaleX'] ?? json['scale_x'], 1.0),
+      scaleY: parseDoubleVal(json['scaleY'] ?? json['scale_y'], 1.0),
+      flipX: (json['flipX'] ?? json['flip_x']) as bool? ?? false,
+      flipY: (json['flipY'] ?? json['flip_y']) as bool? ?? false,
       style: parsedStyle,
       text: json['text']?.toString() ?? 'Sample Text',
-      assetUrl: json['assetUrl']?.toString() ?? '',
-      svgData: json['svgData']?.toString() ?? '',
-      qrData: json['qrData']?.toString() ?? 'https://tournax.com',
-      barcodeData: json['barcodeData']?.toString() ?? '123456789012',
-      shapeType: shapeIndex < ShapeType.values.length ? ShapeType.values[shapeIndex] : ShapeType.rectangle,
-      imageFit: imageFitIndex < ImageFitMode.values.length ? ImageFitMode.values[imageFitIndex] : ImageFitMode.cover,
-      variableKey: json['variableKey']?.toString(),
+      assetUrl: (json['assetUrl'] ?? json['asset_url'])?.toString() ?? '',
+      svgData: (json['svgData'] ?? json['svg_data'])?.toString() ?? '',
+      qrData: (json['qrData'] ?? json['qr_data'])?.toString() ?? 'https://tournax.com',
+      barcodeData: (json['barcodeData'] ?? json['barcode_data'])?.toString() ?? '123456789012',
+      shapeType: ShapeType.fromDynamic(rawShape, ShapeType.rectangle),
+      imageFit: ImageFitMode.fromDynamic(rawFit, ImageFitMode.cover),
+      variableKey: (json['variableKey'] ?? json['variable_key'])?.toString(),
       metadata: parsedMeta,
     );
   }

@@ -172,62 +172,144 @@ class LayerStyle {
 
   static int _parseHex(dynamic val, int defaultVal) {
     if (val == null) return defaultVal;
-    final num n = val as num;
-    return n.toInt().toUnsigned(32);
+    if (val is int) return val.toUnsigned(32);
+    if (val is num) return val.toInt().toUnsigned(32);
+    final str = val.toString().trim();
+    if (str.isEmpty) return defaultVal;
+
+    final parsedInt = int.tryParse(str);
+    if (parsedInt != null) return parsedInt.toUnsigned(32);
+
+    var cleanHex = str.replaceAll('#', '').replaceAll('0x', '').replaceAll('0X', '').trim();
+    if (cleanHex.length == 6) {
+      cleanHex = 'FF$cleanHex';
+    }
+    if (cleanHex.length == 8) {
+      final parsed = int.tryParse(cleanHex, radix: 16);
+      if (parsed != null) return parsed.toUnsigned(32);
+    }
+    return defaultVal;
+  }
+
+  static TextAlign _parseTextAlign(dynamic val, [TextAlign defaultAlign = TextAlign.left]) {
+    if (val == null) return defaultAlign;
+    if (val is int) {
+      return val >= 0 && val < TextAlign.values.length ? TextAlign.values[val] : defaultAlign;
+    }
+    if (val is num) {
+      final i = val.toInt();
+      return i >= 0 && i < TextAlign.values.length ? TextAlign.values[i] : defaultAlign;
+    }
+    final str = val.toString().trim().toLowerCase();
+    final parsedInt = int.tryParse(str);
+    if (parsedInt != null) {
+      return parsedInt >= 0 && parsedInt < TextAlign.values.length ? TextAlign.values[parsedInt] : defaultAlign;
+    }
+    switch (str) {
+      case 'center':
+        return TextAlign.center;
+      case 'right':
+        return TextAlign.right;
+      case 'justify':
+        return TextAlign.justify;
+      case 'start':
+        return TextAlign.start;
+      case 'end':
+        return TextAlign.end;
+      case 'left':
+      default:
+        return TextAlign.left;
+    }
+  }
+
+  static BlendMode _parseBlendMode(dynamic val, [BlendMode defaultMode = BlendMode.srcOver]) {
+    if (val == null) return defaultMode;
+    if (val is int) {
+      return val >= 0 && val < BlendMode.values.length ? BlendMode.values[val] : defaultMode;
+    }
+    if (val is num) {
+      final i = val.toInt();
+      return i >= 0 && i < BlendMode.values.length ? BlendMode.values[i] : defaultMode;
+    }
+    final str = val.toString().trim();
+    final parsedInt = int.tryParse(str);
+    if (parsedInt != null) {
+      return parsedInt >= 0 && parsedInt < BlendMode.values.length ? BlendMode.values[parsedInt] : defaultMode;
+    }
+    final normalized = str.toLowerCase();
+    for (final b in BlendMode.values) {
+      if (b.name.toLowerCase() == normalized) return b;
+    }
+    return defaultMode;
+  }
+
+  static int _parseFontWeight(dynamic val, [int defaultVal = 600]) {
+    if (val == null) return defaultVal;
+    if (val is int) return val;
+    if (val is num) return val.toInt();
+    final str = val.toString().trim().toLowerCase();
+    final parsed = int.tryParse(str);
+    if (parsed != null) return parsed;
+    if (str.contains('bold')) return 700;
+    if (str.contains('light')) return 300;
+    if (str.contains('medium')) return 500;
+    if (str.contains('regular') || str.contains('normal')) return 400;
+    if (str.contains('thin')) return 100;
+    return defaultVal;
   }
 
   factory LayerStyle.fromJson(Map<dynamic, dynamic> rawJson) {
     final json = Map<String, dynamic>.from(rawJson);
 
+    final dynamic rawGradColors = json['gradientColorsHex'] ?? json['gradient_colors_hex'] ?? json['gradientColors'] ?? json['gradient_colors'];
     List<int> colors = const [0xFF3B82F6, 0xFF8B5CF6];
-    if (json['gradientColorsHex'] is List) {
-      colors = (json['gradientColorsHex'] as List)
-          .map((e) => (e as num).toInt().toUnsigned(32))
-          .toList();
+    if (rawGradColors is List) {
+      colors = rawGradColors.map((e) => _parseHex(e, 0xFFFFFFFF)).toList();
     }
 
+    final dynamic rawGradStops = json['gradientStops'] ?? json['gradient_stops'];
     List<double> stops = const [0.0, 1.0];
-    if (json['gradientStops'] is List) {
-      stops = (json['gradientStops'] as List)
-          .map((e) => (e as num).toDouble())
-          .toList();
+    if (rawGradStops is List) {
+      stops = rawGradStops.map((e) => (e as num?)?.toDouble() ?? 0.0).toList();
     }
 
-    final blendIndex = (json['blendMode'] as num?)?.toInt() ?? 0;
-    final alignIndex = (json['textAlign'] as num?)?.toInt() ?? 0;
-    final transformIndex = (json['textTransform'] as num?)?.toInt() ?? 0;
+    final fillVal = json['fillColorHex'] ?? json['fill_color_hex'] ?? json['fillColor'] ?? json['fill_color'];
+    final borderVal = json['borderColorHex'] ?? json['border_color_hex'] ?? json['borderColor'] ?? json['border_color'];
+    final shadowVal = json['shadowColorHex'] ?? json['shadow_color_hex'] ?? json['shadowColor'] ?? json['shadow_color'];
+    final textVal = json['textColorHex'] ?? json['text_color_hex'] ?? json['textColor'] ?? json['text_color'];
+    final textStrokeVal = json['textStrokeColorHex'] ?? json['text_stroke_color_hex'] ?? json['textStrokeColor'] ?? json['text_stroke_color'];
 
     return LayerStyle(
-      fillColorHex: _parseHex(json['fillColorHex'], 0xFF3B82F6),
-      isGradientFill: json['isGradientFill'] as bool? ?? false,
+      fillColorHex: _parseHex(fillVal, 0xFF3B82F6),
+      isGradientFill: (json['isGradientFill'] ?? json['is_gradient_fill']) as bool? ?? false,
       gradientColorsHex: colors,
       gradientStops: stops,
-      gradientAngle: (json['gradientAngle'] as num?)?.toDouble() ?? 45.0,
-      borderColorHex: _parseHex(json['borderColorHex'], 0x00000000),
-      borderWidth: (json['borderWidth'] as num?)?.toDouble() ?? 0.0,
-      borderRadius: (json['borderRadius'] as num?)?.toDouble() ?? 0.0,
-      shadowColorHex: _parseHex(json['shadowColorHex'], 0x40000000),
-      shadowDx: (json['shadowDx'] as num?)?.toDouble() ?? 0.0,
-      shadowDy: (json['shadowDy'] as num?)?.toDouble() ?? 4.0,
-      shadowBlurRadius: (json['shadowBlurRadius'] as num?)?.toDouble() ?? 10.0,
-      shadowSpreadRadius: (json['shadowSpreadRadius'] as num?)?.toDouble() ?? 0.0,
+      gradientAngle: ((json['gradientAngle'] ?? json['gradient_angle']) as num?)?.toDouble() ?? 45.0,
+      borderColorHex: _parseHex(borderVal, 0x00000000),
+      borderWidth: ((json['borderWidth'] ?? json['border_width']) as num?)?.toDouble() ?? 0.0,
+      borderRadius: ((json['borderRadius'] ?? json['border_radius']) as num?)?.toDouble() ?? 0.0,
+      shadowColorHex: _parseHex(shadowVal, 0x40000000),
+      shadowDx: ((json['shadowDx'] ?? json['shadow_dx']) as num?)?.toDouble() ?? 0.0,
+      shadowDy: ((json['shadowDy'] ?? json['shadow_dy']) as num?)?.toDouble() ?? 4.0,
+      shadowBlurRadius: ((json['shadowBlurRadius'] ?? json['shadow_blur_radius']) as num?)?.toDouble() ?? 10.0,
+      shadowSpreadRadius: ((json['shadowSpreadRadius'] ?? json['shadow_spread_radius']) as num?)?.toDouble() ?? 0.0,
       opacity: (json['opacity'] as num?)?.toDouble() ?? 1.0,
-      blendMode: blendIndex < BlendMode.values.length ? BlendMode.values[blendIndex] : BlendMode.srcOver,
+      blendMode: _parseBlendMode(json['blendMode'] ?? json['blend_mode']),
       padding: (json['padding'] as num?)?.toDouble() ?? 0.0,
       margin: (json['margin'] as num?)?.toDouble() ?? 0.0,
-      fontFamily: json['fontFamily']?.toString() ?? 'Inter',
-      fontSize: (json['fontSize'] as num?)?.toDouble() ?? 24.0,
-      fontWeightValue: (json['fontWeightValue'] as num?)?.toInt() ?? 600,
-      isItalic: json['isItalic'] as bool? ?? false,
-      isUnderline: json['isUnderline'] as bool? ?? false,
-      textColorHex: _parseHex(json['textColorHex'], 0xFFFFFFFF),
-      letterSpacing: (json['letterSpacing'] as num?)?.toDouble() ?? 0.0,
-      wordSpacing: (json['wordSpacing'] as num?)?.toDouble() ?? 0.0,
-      lineHeight: (json['lineHeight'] as num?)?.toDouble() ?? 1.2,
-      textStrokeWidth: (json['textStrokeWidth'] as num?)?.toDouble() ?? 0.0,
-      textStrokeColorHex: _parseHex(json['textStrokeColorHex'], 0xFF000000),
-      textAlign: alignIndex < TextAlign.values.length ? TextAlign.values[alignIndex] : TextAlign.left,
-      textTransform: transformIndex < TextTransformMode.values.length ? TextTransformMode.values[transformIndex] : TextTransformMode.none,
+      fontFamily: (json['fontFamily'] ?? json['font_family'])?.toString() ?? 'Inter',
+      fontSize: ((json['fontSize'] ?? json['font_size']) as num?)?.toDouble() ?? 24.0,
+      fontWeightValue: _parseFontWeight(json['fontWeightValue'] ?? json['font_weight_value'] ?? json['fontWeight'] ?? json['font_weight']),
+      isItalic: (json['isItalic'] ?? json['is_italic']) as bool? ?? false,
+      isUnderline: (json['isUnderline'] ?? json['is_underline']) as bool? ?? false,
+      textColorHex: _parseHex(textVal, 0xFFFFFFFF),
+      letterSpacing: ((json['letterSpacing'] ?? json['letter_spacing']) as num?)?.toDouble() ?? 0.0,
+      wordSpacing: ((json['wordSpacing'] ?? json['word_spacing']) as num?)?.toDouble() ?? 0.0,
+      lineHeight: ((json['lineHeight'] ?? json['line_height']) as num?)?.toDouble() ?? 1.2,
+      textStrokeWidth: ((json['textStrokeWidth'] ?? json['text_stroke_width']) as num?)?.toDouble() ?? 0.0,
+      textStrokeColorHex: _parseHex(textStrokeVal, 0xFF000000),
+      textAlign: _parseTextAlign(json['textAlign'] ?? json['text_align']),
+      textTransform: TextTransformMode.fromDynamic(json['textTransform'] ?? json['text_transform']),
     );
   }
 }
