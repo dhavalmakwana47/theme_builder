@@ -32,11 +32,12 @@ class TemplateApiService {
               ),
             );
 
-  /// Fetch paginated list of templates with optional search query.
+  /// Fetch paginated list of templates with optional search query and category filter.
   Future<PaginatedTemplatesResponse> fetchTemplates({
     int page = 1,
-    int perPage = 20,
+    int perPage = 10,
     String? search,
+    String? categoryType = 'slot_list',
   }) async {
     final queryParams = <String, dynamic>{
       'page': page,
@@ -45,12 +46,13 @@ class TemplateApiService {
     if (search != null && search.trim().isNotEmpty) {
       queryParams['search'] = search.trim();
     }
+    if (categoryType != null && categoryType.trim().isNotEmpty) {
+      queryParams['category_type'] = categoryType.trim();
+    }
 
     final List<String> urlsToTry = [
       ApiConfig.baseUrl,
-      'http://127.0.0.1:8000/api/v1',
-      'http://localhost:8000/api/v1',
-      'https://tournax.in/api/v1',
+      'http://10.151.118.115:8000/api/v1',
     ];
 
     Object? lastError;
@@ -110,6 +112,7 @@ class TemplateApiService {
   Future<TemplateModel> createTemplate(TemplateModel template, {String? thumbnailBase64}) async {
     final Map<String, dynamic> payload = {
       'name': template.name,
+      'category_type': template.categoryType,
       'width': template.canvasSpec.width.toInt(),
       'height': template.canvasSpec.height.toInt(),
       'layers_count': template.layers.length,
@@ -137,6 +140,7 @@ class TemplateApiService {
   Future<TemplateModel> updateTemplate(String id, TemplateModel template, {String? thumbnailBase64}) async {
     final Map<String, dynamic> payload = {
       'name': template.name,
+      'category_type': template.categoryType,
       'width': template.canvasSpec.width.toInt(),
       'height': template.canvasSpec.height.toInt(),
       'layers_count': template.layers.length,

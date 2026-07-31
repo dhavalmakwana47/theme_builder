@@ -264,6 +264,54 @@ class PropertyInspector extends ConsumerWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _buildSectionHeader('Template Category Type'),
+            const SizedBox(height: 8),
+            const Text('Category Type', style: TextStyle(color: AppColors.textSecondary, fontSize: 11)),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              decoration: BoxDecoration(color: AppColors.panelHeader, borderRadius: BorderRadius.circular(4)),
+              child: DropdownButton<String>(
+                value: ['slot_list', 'leaderboard'].contains(notifier.state.template.categoryType)
+                    ? notifier.state.template.categoryType
+                    : 'slot_list',
+                dropdownColor: AppColors.panelHeader,
+                isExpanded: true,
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+                underline: const SizedBox.shrink(),
+                items: const [
+                  DropdownMenuItem(
+                    value: 'slot_list',
+                    child: Row(
+                      children: [
+                        Icon(Icons.grid_view_rounded, size: 14, color: AppColors.accentPrimary),
+                        SizedBox(width: 8),
+                        Text('Slot List (slot_list)'),
+                      ],
+                    ),
+                  ),
+                  DropdownMenuItem(
+                    value: 'leaderboard',
+                    child: Row(
+                      children: [
+                        Icon(Icons.leaderboard_rounded, size: 14, color: Colors.amber),
+                        SizedBox(width: 8),
+                        Text('Leaderboard (leaderboard)'),
+                      ],
+                    ),
+                  ),
+                ],
+                onChanged: (val) {
+                  if (val != null) {
+                    notifier.updateCategoryType(val);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: AppColors.borderDark, height: 1),
+            const SizedBox(height: 12),
+
             _buildSectionHeader('Canvas Resolution & Settings'),
             const SizedBox(height: 12),
 
@@ -454,8 +502,40 @@ class PropertyInspector extends ConsumerWidget {
             final Color newColor = await showColorPickerDialog(
               context,
               currentColor,
-              backgroundColor: AppColors.panelHeader,
-              title: Text('Select $label', style: const TextStyle(color: Colors.white)),
+              backgroundColor: AppColors.panelBackground,
+              elevation: 6,
+              title: Text('Select $label', style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+              width: 36,
+              height: 36,
+              borderRadius: 6,
+              spacing: 6,
+              runSpacing: 6,
+              wheelDiameter: 165,
+              wheelHasBorder: true,
+              enableOpacity: true,
+              showColorCode: true,
+              colorCodeHasColor: true,
+              showColorName: true,
+              showRecentColors: true,
+              maxRecentColors: 8,
+              pickersEnabled: const <ColorPickerType, bool>{
+                ColorPickerType.both: true,
+                ColorPickerType.primary: true,
+                ColorPickerType.accent: true,
+                ColorPickerType.bw: true,
+                ColorPickerType.custom: true,
+                ColorPickerType.wheel: true,
+              },
+              actionButtons: const ColorPickerActionButtons(
+                okButton: true,
+                closeButton: true,
+                dialogActionButtons: true,
+              ),
+              copyPasteBehavior: const ColorPickerCopyPasteBehavior(
+                longPressMenu: true,
+                copyButton: true,
+                pasteButton: true,
+              ),
             );
             onColorPicked(newColor);
           },
@@ -501,16 +581,23 @@ class PropertyInspector extends ConsumerWidget {
   }
 
   Widget _buildDynamicVariableBinder(LayerModel layer, EditorNotifier notifier) {
-    const variables = [
+    final List<String> variables = [
       'None',
+      '{{tournament_name}}',
+      '{{group_name}}',
+      '{{match_name}}',
+      '{{date}}',
+      '{{sponsor_logo}}',
+      '{{organizer_logo}}',
+      '{{organizer_name}}',
       '{{team_name}}',
+      '{{team_logo}}',
       '{{player_name}}',
       '{{rank}}',
       '{{kills}}',
       '{{points}}',
       '{{slot}}',
       '{{match}}',
-      '{{date}}',
       '{{prize}}',
     ];
 

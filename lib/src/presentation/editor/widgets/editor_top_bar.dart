@@ -200,6 +200,57 @@ class EditorTopBar extends ConsumerWidget {
             },
           ),
 
+          const SizedBox(width: 8),
+          const VerticalDivider(color: AppColors.borderDark, indent: 8, endIndent: 8),
+          const SizedBox(width: 8),
+
+          // Category Type Selector (Slot List vs Leaderboard)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: AppColors.panelBackground,
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(color: AppColors.borderDark),
+            ),
+            child: DropdownButton<String>(
+              value: ['slot_list', 'leaderboard'].contains(state.template.categoryType)
+                  ? state.template.categoryType
+                  : 'slot_list',
+              dropdownColor: AppColors.panelHeader,
+              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              underline: const SizedBox.shrink(),
+              items: const [
+                DropdownMenuItem(
+                  value: 'slot_list',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.grid_view_rounded, size: 14, color: AppColors.accentPrimary),
+                      SizedBox(width: 6),
+                      Text('Slot List'),
+                    ],
+                  ),
+                ),
+                DropdownMenuItem(
+                  value: 'leaderboard',
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.leaderboard_rounded, size: 14, color: Colors.amber),
+                      SizedBox(width: 6),
+                      Text('Leaderboard'),
+                    ],
+                  ),
+                ),
+              ],
+              onChanged: (val) {
+                if (val != null) {
+                  notifier.updateCategoryType(val);
+                }
+              },
+            ),
+          ),
+
           const SizedBox(width: 12),
 
           // Dynamic Variables Live Preview Toggle & Dialog

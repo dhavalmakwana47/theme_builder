@@ -11,8 +11,9 @@ import '../services/template_api_service.dart';
 abstract class TemplateRepository {
   Future<PaginatedTemplatesResponse> getTemplates({
     int page = 1,
-    int perPage = 20,
+    int perPage = 10,
     String? search,
+    String? categoryType,
   });
   Future<TemplateModel?> getTemplateById(String id);
   Future<TemplateModel> saveTemplate(TemplateModel template, {String? thumbnailBase64});
@@ -34,14 +35,16 @@ class TemplateRepositoryImpl implements TemplateRepository {
   @override
   Future<PaginatedTemplatesResponse> getTemplates({
     int page = 1,
-    int perPage = 20,
+    int perPage = 10,
     String? search,
+    String? categoryType = 'slot_list',
   }) async {
     try {
       return await apiService.fetchTemplates(
         page: page,
         perPage: perPage,
         search: search,
+        categoryType: categoryType,
       );
     } catch (e) {
       final sampleList = [create12SlotListTemplate(), createSampleTemplate()];
@@ -415,7 +418,6 @@ class TemplateRepositoryImpl implements TemplateRepository {
       // --- Left Column Slot ---
       final int leftNum = row + 1;
       final String leftNumStr = leftNum < 10 ? '0$leftNum' : '$leftNum';
-      globalVars['{{team_name_$leftNum}}'] = 'Team $leftNumStr';
 
       // Left Slot Number Text
       layers.add(
@@ -473,7 +475,7 @@ class TemplateRepositoryImpl implements TemplateRepository {
           width: 250,
           height: 28,
           zIndex: zIndex++,
-          variableKey: '{{team_name_$leftNum}}',
+          variableKey: '{{team_name}}',
           style: const LayerStyle(
             fontSize: 20,
             fontFamily: 'Montserrat',
@@ -509,7 +511,6 @@ class TemplateRepositoryImpl implements TemplateRepository {
       // --- Right Column Slot ---
       final int rightNum = row + 13;
       final String rightNumStr = '$rightNum';
-      globalVars['{{team_name_$rightNum}}'] = 'Team $rightNumStr';
 
       // Right Team Name Text
       layers.add(
@@ -523,7 +524,7 @@ class TemplateRepositoryImpl implements TemplateRepository {
           width: 220,
           height: 28,
           zIndex: zIndex++,
-          variableKey: '{{team_name_$rightNum}}',
+          variableKey: '{{team_name}}',
           style: const LayerStyle(
             fontSize: 20,
             fontFamily: 'Montserrat',

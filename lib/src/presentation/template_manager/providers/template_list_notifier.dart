@@ -11,6 +11,7 @@ class TemplateListState {
   final int currentPage;
   final int lastPage;
   final String searchQuery;
+  final String selectedCategory;
   final String? errorMessage;
 
   TemplateListState({
@@ -20,6 +21,7 @@ class TemplateListState {
     this.currentPage = 1,
     this.lastPage = 1,
     this.searchQuery = '',
+    this.selectedCategory = 'slot_list',
     this.errorMessage,
   });
 
@@ -30,6 +32,7 @@ class TemplateListState {
     int? currentPage,
     int? lastPage,
     String? searchQuery,
+    String? selectedCategory,
     String? errorMessage,
   }) {
     return TemplateListState(
@@ -39,6 +42,7 @@ class TemplateListState {
       currentPage: currentPage ?? this.currentPage,
       lastPage: lastPage ?? this.lastPage,
       searchQuery: searchQuery ?? this.searchQuery,
+      selectedCategory: selectedCategory ?? this.selectedCategory,
       errorMessage: errorMessage,
     );
   }
@@ -63,8 +67,9 @@ class TemplateListNotifier extends StateNotifier<TemplateListState> {
     try {
       final res = await repository.getTemplates(
         page: 1,
-        perPage: 20,
+        perPage: 10,
         search: state.searchQuery,
+        categoryType: state.selectedCategory,
       );
 
       state = state.copyWith(
@@ -93,8 +98,9 @@ class TemplateListNotifier extends StateNotifier<TemplateListState> {
       final nextPage = state.currentPage + 1;
       final res = await repository.getTemplates(
         page: nextPage,
-        perPage: 20,
+        perPage: 10,
         search: state.searchQuery,
+        categoryType: state.selectedCategory,
       );
 
       final combined = List<TemplateModel>.from(state.templates)..addAll(res.templates);
@@ -117,6 +123,13 @@ class TemplateListNotifier extends StateNotifier<TemplateListState> {
     _debounceTimer = Timer(const Duration(milliseconds: 400), () {
       fetchTemplates(isRefresh: true);
     });
+  }
+
+  /// Set selected category filter
+  void setSelectedCategory(String category) {
+    if (state.selectedCategory == category) return;
+    state = state.copyWith(selectedCategory: category, searchQuery: '');
+    fetchTemplates(isRefresh: true);
   }
 
   /// Optimistic delete template

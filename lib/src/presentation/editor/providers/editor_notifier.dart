@@ -324,6 +324,10 @@ class EditorNotifier extends StateNotifier<EditorState> {
     _pushHistory(state.template.copyWith(canvasSpec: spec, layers: updatedLayers));
   }
 
+  void updateCategoryType(String categoryType) {
+    _pushHistory(state.template.copyWith(categoryType: categoryType));
+  }
+
   void setZoom(double zoom) {
     state = state.copyWith(zoomLevel: zoom.clamp(0.1, 5.0));
   }

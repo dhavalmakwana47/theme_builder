@@ -230,3 +230,35 @@ enum EditorTool {
   eyedropper,
   zoom;
 }
+
+/// Template Category Types.
+enum TemplateCategoryType {
+  slotList,
+  leaderboard;
+
+  String get value {
+    switch (this) {
+      case TemplateCategoryType.slotList:
+        return 'slot_list';
+      case TemplateCategoryType.leaderboard:
+        return 'leaderboard';
+    }
+  }
+
+  String get displayName {
+    switch (this) {
+      case TemplateCategoryType.slotList:
+        return 'Slot List';
+      case TemplateCategoryType.leaderboard:
+        return 'Leaderboard';
+    }
+  }
+
+  static TemplateCategoryType fromDynamic(dynamic val, [TemplateCategoryType defaultType = TemplateCategoryType.slotList]) {
+    if (val == null) return defaultType;
+    final str = val.toString().trim().toLowerCase();
+    if (str == 'leaderboard' || str == 'lederbaord') return TemplateCategoryType.leaderboard;
+    if (str == 'slot_list' || str == 'slotlist' || str == 'slot list') return TemplateCategoryType.slotList;
+    return defaultType;
+  }
+}

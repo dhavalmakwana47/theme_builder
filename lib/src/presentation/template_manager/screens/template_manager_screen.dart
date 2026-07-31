@@ -210,6 +210,39 @@ class _TemplateManagerScreenState extends ConsumerState<TemplateManagerScreen> {
             ),
           ),
 
+          // Category Filter Bar (Default: Slot List)
+          Container(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
+            color: AppColors.panelBackground,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildCategoryChip(
+                    label: 'Slot List',
+                    categoryKey: 'slot_list',
+                    icon: Icons.grid_view_rounded,
+                    selectedCategory: state.selectedCategory,
+                  ),
+                  const SizedBox(width: 8),
+                  _buildCategoryChip(
+                    label: 'Leaderboard',
+                    categoryKey: 'leaderboard',
+                    icon: Icons.leaderboard_rounded,
+                    selectedCategory: state.selectedCategory,
+                  ),
+                  const SizedBox(width: 8),
+                  _buildCategoryChip(
+                    label: 'All Categories',
+                    categoryKey: 'all',
+                    icon: Icons.category_rounded,
+                    selectedCategory: state.selectedCategory,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
           // Main Body
           Expanded(
             child: RefreshIndicator(
@@ -452,15 +485,43 @@ class _TemplateManagerScreenState extends ConsumerState<TemplateManagerScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    template.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          template.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: template.categoryType == 'leaderboard'
+                              ? Colors.amber.withOpacity(0.2)
+                              : AppColors.accentPrimary.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(4),
+                          border: Border.all(
+                            color: template.categoryType == 'leaderboard'
+                                ? Colors.amber.withOpacity(0.5)
+                                : AppColors.accentPrimary.withOpacity(0.5),
+                          ),
+                        ),
+                        child: Text(
+                          template.categoryType == 'leaderboard' ? 'Leaderboard' : 'Slot List',
+                          style: TextStyle(
+                            color: template.categoryType == 'leaderboard' ? Colors.amber : AppColors.accentPrimary,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -487,6 +548,45 @@ class _TemplateManagerScreenState extends ConsumerState<TemplateManagerScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCategoryChip({
+    required String label,
+    required String categoryKey,
+    required IconData icon,
+    required String selectedCategory,
+  }) {
+    final bool isSelected = selectedCategory == categoryKey;
+    return ChoiceChip(
+      showCheckmark: false,
+      avatar: Icon(
+        icon,
+        size: 14,
+        color: isSelected ? Colors.white : AppColors.textSecondary,
+      ),
+      label: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? Colors.white : AppColors.textSecondary,
+          fontSize: 12,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+        ),
+      ),
+      selected: isSelected,
+      selectedColor: AppColors.accentPrimary,
+      backgroundColor: AppColors.panelHeader,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(
+          color: isSelected ? AppColors.accentPrimary : AppColors.borderDark,
+        ),
+      ),
+      onSelected: (val) {
+        if (val) {
+          ref.read(templateListProvider.notifier).setSelectedCategory(categoryKey);
+        }
+      },
     );
   }
 }

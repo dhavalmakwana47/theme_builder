@@ -12,7 +12,7 @@ class ApiConfig {
 
   // API Key Authentication Header requirement
   static const String apiKeyHeaderName = 'X-API-KEY';
-  static const String apiKey = 'YOUR_SECRET_API_KEY';
+  static const String apiKey = 'txx_9f4KqP7mN2vX8aL5RwY1JdEc6HsB3ZnU';
 
   static Map<String, String> get defaultHeaders => {
         apiKeyHeaderName: apiKey,
