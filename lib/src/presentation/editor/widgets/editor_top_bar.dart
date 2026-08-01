@@ -110,6 +110,72 @@ class EditorTopBar extends ConsumerWidget {
             },
           ),
           _buildActionButton(
+            icon: Icons.leaderboard_rounded,
+            label: '12-Team Leaderboard',
+            onTap: () async {
+              final leaderboardTemplate = ref.read(templateRepositoryProvider).create12TeamLeaderboardTemplate();
+              notifier.loadTemplate(leaderboardTemplate);
+              final saved = await ref.read(templateListProvider.notifier).saveTemplate(leaderboardTemplate);
+              if (saved != null) {
+                notifier.loadTemplate(saved);
+              }
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(saved != null
+                        ? 'Loaded & saved 12-Team Pro Esports Leaderboard Graphic to Laravel API!'
+                        : 'Loaded 12-Team Pro Esports Leaderboard Graphic locally'),
+                    backgroundColor: saved != null ? AppColors.accentSuccess : AppColors.accentPrimary,
+                  ),
+                );
+              }
+            },
+          ),
+          _buildActionButton(
+            icon: Icons.format_list_numbered_rounded,
+            label: '16-Team Standings',
+            onTap: () async {
+              final standingsTemplate = ref.read(templateRepositoryProvider).create16TeamStandingsTemplate();
+              notifier.loadTemplate(standingsTemplate);
+              final saved = await ref.read(templateListProvider.notifier).saveTemplate(standingsTemplate);
+              if (saved != null) {
+                notifier.loadTemplate(saved);
+              }
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(saved != null
+                        ? 'Loaded & saved 16-Team Overall Standings to Laravel API!'
+                        : 'Loaded 16-Team Overall Standings locally'),
+                    backgroundColor: saved != null ? AppColors.accentSuccess : AppColors.accentPrimary,
+                  ),
+                );
+              }
+            },
+          ),
+          _buildActionButton(
+            icon: Icons.star_rounded,
+            label: 'Yellow Standings',
+            onTap: () async {
+              final yellowTemplate = ref.read(templateRepositoryProvider).create15TeamYellowStandingsTemplate();
+              notifier.loadTemplate(yellowTemplate);
+              final saved = await ref.read(templateListProvider.notifier).saveTemplate(yellowTemplate);
+              if (saved != null) {
+                notifier.loadTemplate(saved);
+              }
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(saved != null
+                        ? 'Loaded & saved 15-Team Yellow Pro Overall Standings to Laravel API!'
+                        : 'Loaded 15-Team Yellow Pro Overall Standings locally'),
+                    backgroundColor: saved != null ? AppColors.accentSuccess : AppColors.accentPrimary,
+                  ),
+                );
+              }
+            },
+          ),
+          _buildActionButton(
             icon: Icons.save,
             label: 'Save',
             onTap: () async {
